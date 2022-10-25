@@ -1,0 +1,487 @@
+#tkinter import
+import tkinter as tk
+from tkinter import *
+from tkinter import filedialog
+from tkinter.filedialog import askopenfile
+from tkinter.messagebox import showinfo
+from tkinter.ttk import Separator, Style
+#pandas import
+import pandas as pd
+#numpy import
+import numpy as np
+#random import
+import random
+#importo os
+import os
+
+# importing the threading module
+from threading import Thread
+#import my multi threading function to upload and download file
+from MyMultiThreading import *
+
+#import loading window
+import WindowLoading as wLd
+#import next window
+import WindowTaxonomicAnnotation as wTxAn
+
+class ProteinsWindow(tk.Toplevel): #tk.Tk):
+  def __init__(self, wn_previous):
+    super().__init__()
+
+    #take the root window (in this case is the same that previous)
+    self.wn_root = wn_previous
+    #take the previous window
+    self.wn_previous = wn_previous
+
+    #preapre df
+    self.df = pd.DataFrame()
+    #check if file is load
+    self.isFileLoad = False
+
+    # configure the root window
+    self.title('Proteins')
+    self.geometry('1400x600')
+
+    #fonts
+    self.font_title=('Calibri', 16, 'bold')
+    self.font_up_base = ('Calibri', 12, 'bold')
+    self.font_base = ('Calibri', 12)
+    self.font_button = ('Calibri', 10)
+    self.font_checkbox = ('Calibri', 10)
+
+    #for Entry widget
+    vcmd = (self.register(self.onValidate), '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
+
+
+    ### left area ###
+    #Load button
+    self.btn_loadFile = tk.Button(self, text='Upload input file', font=self.font_button, width=20, command=self.upload_proteins_file)
+    self.btn_loadFile.grid(row=0, column=0, padx=5, pady=5)
+    #label template
+    self.lbl_loadedFile = tk.Label(self, text='No file',width=30,font=self.font_up_base)
+    self.lbl_loadedFile.grid(row=1, column=0, padx=5, pady=5)
+    #Download button
+    self.btn_download = tk.Button(self, text='Download filtered table', font=self.font_button, width=20,command=self.download)
+    self.btn_download.grid(row=2, column=0, padx=5, pady=5)
+    #Previous Step
+    self.btn_previous_step = tk.Button(self, text='🡸 Previous step', font=self.font_button, width=20,command=self.previous_window)
+    self.btn_previous_step.grid(row=15, column=0, padx=5, pady=5)
+    #Next Step
+    self.btn_next_step = tk.Button(self, text='Next step 🡺', font=self.font_button, width=20,  command=self.next_window)
+    self.btn_next_step.grid(row=15, column=5, padx=5, pady=5)
+
+
+    ### centre area ###
+    #Fileter
+    self.lbl_fileter = tk.Label(self,text='Filter proteins based on',width=20,font=self.font_title)  
+    self.lbl_fileter.grid(row=0, column=1, columnspan=4, padx=6, pady=6)
+    #separator    
+    self.sp = Separator(self, orient="horizontal")
+    self.sp.grid(row=1, column=1, columnspan=4, padx=6, sticky='ew')
+
+    #Protein FDR label (Confidence)
+    self.lbl_confidence = tk.Label(self,text='Confidence',width=20, font=self.font_title)  
+    self.lbl_confidence.grid(row=2, column=1, padx=6, pady=6)
+    #Protein FDR checkboxes (Confidence)
+    self.var_chc_low = IntVar(value=1)
+    self.var_chc_medium = IntVar(value=1)
+    self.var_chc_high = IntVar(value=1)
+    self.chc_low = tk.Checkbutton(self, text='Low', width=20, anchor="w", variable=self.var_chc_low, onvalue=1, offvalue=0)
+    self.chc_low.grid(row=3, column=1, padx=(50,5), pady=5)
+    self.chc_low.select()
+    self.chc_low.config( font = self.font_checkbox )
+    self.chc_medium = tk.Checkbutton(self, text='Medium', width=20, anchor="w", variable=self.var_chc_medium, onvalue=1, offvalue=0)
+    self.chc_medium.grid(row=4, column=1, padx=(50,5), pady=5)
+    self.chc_medium.select()
+    self.chc_medium.config( font = self.font_checkbox )
+    self.chc_high = tk.Checkbutton(self, text='High', width=20, anchor="w", variable=self.var_chc_high, onvalue=1, offvalue=0)
+    self.chc_high.grid(row=5, column=1, padx=(50,5), pady=5)
+    self.chc_high.select()
+    self.chc_high.config( font = self.font_checkbox )
+    
+    #Description Label
+    self.lbl_description = tk.Label(self,text='Protein Description', width=20, font=self.font_title)  
+    self.lbl_description.grid(row=2, column=2, columnspan=2, padx=6, pady=6)
+    #Radio button frame
+    self.rbd_frame = Frame(self, bg="red", width=20, height=20)
+    self.rbd_frame.grid(row=3, column=2, columnspan=2)
+    #Radio button
+    self.rdb_var = StringVar(value='and')
+    self.rdb_and = tk.Radiobutton(self.rbd_frame, text="And", width=10, variable=self.rdb_var, value='and')
+    self.rdb_and.grid(row=0, column=0, padx=(0,0), pady=0)#, sticky="W")
+    self.rdb_and.config( font = self.font_checkbox )
+    self.rdb_or = tk.Radiobutton(self.rbd_frame, text="Or", width=10, variable=self.rdb_var, value='or')
+    self.rdb_or.grid(row=0, column=1, padx=(0,0), pady=0)#, sticky="E")
+    self.rdb_or.config( font = self.font_checkbox )
+    #Description Entry
+    self.ntr_description = tk.Entry(self, width=36)
+    self.ntr_description.grid(row=4,column=2)
+    #Description Add button
+    self.btn_add = tk.Button(self, text='Add', font=self.font_button, width=3, command=self.add_description_element)
+    self.btn_add.grid(row=4, column=3)
+    #List for label and button
+    self.lbls_description = []
+    self.btns_remove = []
+    self.descriptionIndex = 0
+    #Create frame and scrollbar
+    self.dsc_frame = Frame(self)#, bg='red')
+    self.dsc_frame.grid(row=5, column=2, rowspan=4, columnspan=2)
+    #scrollbar
+    self.dsc_scrollbar = Scrollbar(self.dsc_frame,  orient=VERTICAL)
+    #Listbox
+    #SINGLE, BROWSE, MULTIPLE, EXTENDED
+    self.dsc_listbox = Listbox(self.dsc_frame, yscrollcommand=self.dsc_scrollbar.set, selectmode=EXTENDED) #background="Blue", fg="white", selectbackground="Red",highlightcolor="Red",
+    self.dsc_listbox.grid(row=0, column=0)
+    self.dsc_listbox.config(width=40, height=7)
+    #configure scrollvar
+    self.dsc_scrollbar.config(command=self.dsc_listbox.yview)
+    self.dsc_scrollbar.grid(row=0, column=1, sticky="NS")
+    #Description Remove button
+    self.btn_remove = tk.Button(self, text='Remove', font=self.font_button, width=23, command=self.remove_description_element)
+    self.btn_remove.grid(row=9, column=2, padx=5, pady=5)
+
+    #Valid values (Abundance label)
+    self.lbl_abundance = tk.Label(self,text='Valid values threshold', width=20, font=self.font_title)  
+    self.lbl_abundance.grid(row=2, column=4, padx=6, pady=6)
+    #Abundance option
+    options_list = ["Absolute", "Percentage"]
+    self.opt_abundance_var = StringVar(value='Absolute')
+    self.opt_abundance = tk.OptionMenu(self, self.opt_abundance_var, *options_list)
+    self.opt_abundance.configure(width=12)
+    self.opt_abundance.grid(row=3, column=4)
+    self.opt_abundance.config( font = self.font_checkbox )
+    #Abundance Entry
+    self.ntr_abundance = tk.Entry(self, width=20, validate="key", validatecommand=vcmd)
+    self.ntr_abundance.insert(0, "0")
+    self.ntr_abundance.grid(row=4, column=4)
+    #Abundance info
+    self.lbl_abundanceTot = tk.Label(self,text='', width=20, font=self.font_base)
+    self.lbl_abundanceTot.grid(row=5, column=4, padx=5, pady=(0,5))
+
+    #MakedAs label
+    self.lbl_marked = tk.Label(self,text='Marker', width=20, font=self.font_title)  
+    self.lbl_marked.grid(row=6, column=4, padx=6, pady=(24,6))
+    
+
+    ### right area ###
+    #Options
+    self.lbl_options = tk.Label(self,text='Options',width=32,font=self.font_title)  
+    self.lbl_options.grid(row=0, column=5, padx=6, pady=6)
+
+    #Master checkbox
+    self.var_chc_master = IntVar(value=0)
+    self.chc_master = tk.Checkbutton(self, text='Master protein only', width=32, anchor="w", variable=self.var_chc_master, onvalue=1, offvalue=0)
+    self.chc_master.grid(row=2, column=5, padx=5, pady=5)
+    self.chc_master.config( font = self.font_checkbox )
+    
+    #Normalized checkbox
+    self.var_chc_normalized = IntVar(value=0)
+    self.chc_normalized = tk.Checkbutton(self, text='Select normalized abundances', width=32, anchor="w", variable=self.var_chc_normalized, onvalue=1, offvalue=0, command=self.normalized_control )
+    self.chc_normalized.grid(row=3, column=5, padx=5, pady=5)
+    self.chc_normalized.config( font = self.font_checkbox )
+
+    #Re-Normalized checkbox
+    self.var_chc_re_normalized = IntVar(value=0)
+    self.chc_re_normalized = tk.Checkbutton(self, text='Re-normalize abundances after filtering', width=32, anchor="w", variable=self.var_chc_re_normalized, onvalue=1, offvalue=0, command=self.normalized_control )
+    self.chc_re_normalized.grid(row=4, column=5, padx=5, pady=5)
+    self.chc_re_normalized.config( font = self.font_checkbox )
+
+    #Fill with 0 in abundances
+    self.var_chc_fill_zero = IntVar(value=0)
+    self.chc_fill_zero = tk.Checkbutton(self, text='Replace missing values with 0', width=32, anchor="w", variable=self.var_chc_fill_zero, onvalue=1, offvalue=0)
+    self.chc_fill_zero.grid(row=5, column=5, padx=5, pady=5)
+    self.chc_fill_zero.config( font = self.font_checkbox )
+
+    #put this window up
+    self.lift()
+
+    #when I close window
+    self.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+
+  def on_closing(self):
+    if tk.messagebox.askokcancel("Quit", "Do you want to quit?"):
+        self.wn_root.destroy()
+
+  def onValidate(self, d, i, P, s, S, v, V, W):
+    '''
+    self.text.delete("1.0", "end")
+    self.text.insert("end","OnValidate:\n")
+    self.text.insert("end","d='%s'\n" % d)
+    self.text.insert("end","i='%s'\n" % i)
+    self.text.insert("end","P='%s'\n" % P)
+    self.text.insert("end","s='%s'\n" % s)
+    self.text.insert("end","S='%s'\n" % S)
+    self.text.insert("end","v='%s'\n" % v)
+    self.text.insert("end","V='%s'\n" % V)
+    self.text.insert("end","W='%s'\n" % W)
+    # Disallow anything but lowercase letters
+    if S == S.lower():
+        return True
+    else:
+        self.bell()
+        return False
+    '''
+    return S.isdigit()  
+
+  def normalized_control(self):
+    if(self.var_chc_normalized.get() == 1):
+      self.var_chc_re_normalized.set(0)
+
+  def monitor_upload(self, thread):
+    if thread.is_alive():
+      # check the thread every 100ms
+      self.after(100, lambda: self.monitor_upload(thread))
+    else:
+      #delete load window
+      self.winLoad.destroy()
+      #put window in front
+      self.lift()
+      if(thread.fileOpen):
+        #take the df
+        self.df = thread.df
+        #read it to create some button in the window and mark if the file is load
+        self.isFileLoad = self.manage_the_upload()
+      else:
+        tk.messagebox.showerror(parent=self, title="Error", message="File not upload\nIt is probably in use by another program")
+
+  def monitor_download(self, thread):
+    if thread.is_alive():
+      #check the thread every 100ms
+      self.after(100, lambda: self.monitor_download(thread))
+    else:
+      #delete load window
+      self.winLoad.destroy()
+      #put window in front
+      self.lift()
+      if(not thread.fileSaved):
+        tk.messagebox.showerror(parent=self, title="Error", message="File not saved\nIt is probably in use by another program")
+
+  def manage_the_upload(self):
+    #remove unused coloum
+    '''
+    #old method
+    self.df.drop(['Checked','Unique Sequence ID', 'Protein Group IDs', 'Sequence', 'FASTA Title Lines', 'Exp. q-value: Combined', 'Sum PEP Score', 
+         '# Decoy Protein: Combined', 'Coverage [%]', '# Peptides', '# PSMs', '# Protein Unique Peptides', '# Unique Peptides', '# AAs',
+         'MW [kDa]', 'calc. pI', 'Score Sequest HT: Sequest HT', 'Coverage [%] (by Search Engine): Sequest HT',
+         '# PSMs (by Search Engine): Sequest HT', '# Peptides (by Search Engine): Sequest HT', 'Biological Process','Pfam IDs', 'GO Accessions', 'Entrez Gene ID',
+         'Ensembl Gene ID', 'Gene Symbol', 'Chromosome', 'KEGG Pathway Accessions', 'KEGG Pathways', 'Reactome Pathway Accessions',
+         'Reactome Pathway Accessions (All)', 'Reactome Pathways', 'WikiPathway Accessions', 'WikiPathways',
+         '# Protein Annotation Groups'], inplace=True, axis=1, errors='ignore')
+    self.df.drop(['Molecular Function', 'Cellular Component', '# Protein Groups', 'Modifications', '# Protein Pathway Groups', '# Razor Peptides'], inplace=True, axis=1, errors='ignore')
+    self.df.drop(list(self.df.filter(regex = 'Abundances Count')), axis = 1, inplace = True)
+    '''
+    #new method
+    #find all abundances columns
+    abundances_columns = list(self.df.filter(regex = 'Abundance:')) + list(self.df.filter(regex = '(Normalized)'))
+    #create a valid list of columns and add abundaces columns
+    valid_columns = ['Protein FDR Confidence: Combined', 'Master', 'Accession', 'Description',
+                     'Marked as'] + abundances_columns
+    #in the df keep only the useful columns
+    self.df = self.df.filter(items=valid_columns)
+
+    #check if the df_columns cointains all valid columns, otherwise return an error message and exit from method
+    check = all(item in self.df.columns for item in valid_columns)
+    if(not check):
+      self.isFileLoad = False
+      self.lbl_loadedFile['text'] = "No file"
+      tk.messagebox.showerror(parent=self, title="Error", message="Incompatible columns in uploaded file")
+      return False
+
+    if('Abundances (Normalized): F1: Sample' not in self.df.columns):
+      self.var_chc_normalized.set(0)
+      self.chc_normalized.grid_remove()
+    else:
+      self.chc_normalized.grid()
+
+    #to be sure, any old lists and checkboxes are removed
+    if( hasattr(self, 'chcs_marked') ):
+      #destroy all chechbox widget
+      for i in self.chcs_marked:
+        i.destroy()
+      #clear the lists
+      self.chcs_marked.clear()
+      self.var_chcs_marked.clear()
+
+    #get MarkedAs as value and put in a list
+    markedList = self.df['Marked as'].unique()
+    markedList = markedList.tolist()
+    #get position of markedAs label
+    info = self.lbl_marked.grid_info()
+    actual_marked_row = info["row"] + 1 #add one to not overwrite label 
+    actual_marked_column = info["column"]
+    #iterate for all element
+    i = 0
+    self.chcs_marked = []
+    self.var_chcs_marked = []
+    for x in markedList:
+      c = i
+      self.var_chcs_marked.append(IntVar(value=1))
+      self.chcs_marked.append( tk.Checkbutton(self, text=x, width=20, anchor="w", variable=self.var_chcs_marked[c], onvalue=1, offvalue=0) )
+      self.chcs_marked[i].grid(row=(i+actual_marked_row), column=actual_marked_column, padx=(50,0))
+      self.chcs_marked[i].select()
+      self.chcs_marked[i].config( font = self.font_checkbox )
+      i = i+1
+
+    #add number of aboundance columns
+    self.num_abundance_tot = int((len(list(self.df.filter(regex=r'F\d+'))))/2)
+    self.lbl_abundanceTot["text"] = "(# of samples: " + str(self.num_abundance_tot) + " )"
+
+    return True
+
+  def upload_proteins_file(self):
+    #ask file name
+    filepath = filedialog.askopenfilename(parent=self, title="Open") #,filetypes=(("text files","*.txt"),("All files","*.*")))
+
+    #check if a file has been chosen
+    if filepath:
+      #load the name of file in label (if name is too long then resize it)
+      tmp_path = os.path.basename(filepath)
+      if(len(tmp_path)>25):
+        tmp_path = tmp_path[:25] + "..."
+      self.lbl_loadedFile['text'] = tmp_path
+      #self.lbl_loadedFile['text'] = os.path.basename(filepath)
+
+      #show loading windows
+      self.winLoad = wLd.LoadingWindow("Upload file...")
+
+      #create thread to load file
+      upload_thread = AsyncUpload(filepath)
+      upload_thread.start()
+      self.monitor_upload(upload_thread)
+    else:
+      tk.messagebox.showwarning(parent=self, title="Warning", message="No file selected")
+
+  def proper_round(self, num, dec=0):
+    num = str(num)[:str(num).index('.')+dec+2]
+    if num[-1]>='5':
+        return float(num[:-2-(not dec)]+str(int(num[-2-(not dec)])+1))
+    return float(num[:-1])
+
+  def add_description_element(self):
+    #string to insert
+    my_string = self.ntr_description.get()
+    #check if alredy insert
+    iscontain = my_string in self.dsc_listbox.get(0, "end")
+    if(iscontain):
+      tk.messagebox.showerror(parent=self, title="Error", message="These values have already been entered")
+    else:
+      #add new text to listbox
+      self.dsc_listbox.insert(END, my_string)
+      #delete old description text
+      self.ntr_description.delete(0,END)
+
+  def remove_description_element(self):
+    #self.dsc_listbox.delete(ANCHOR)
+    for item in reversed(self.dsc_listbox.curselection()):
+      self.dsc_listbox.delete(item)
+
+  def is_value_ok(self):
+    #check for abundance
+    num_abundance = int(self.ntr_abundance.get())
+    #control type
+    if(self.opt_abundance_var.get() == 'Absolute'):
+      if(num_abundance<0 or num_abundance>self.num_abundance_tot):
+        tk.messagebox.showerror(parent=self, title="Error", message="Aboundance value is out of range")
+        return False
+    elif(self.opt_abundance_var.get() == 'Percentage'):
+      if(num_abundance<0 or num_abundance>100):
+        tk.messagebox.showerror(parent=self, title="Error", message="Aboundance value is out of range")
+        return False
+
+    #if ther aren't error, then return true
+    return True
+
+  def monitor_manage_file(self, thread, next_command):
+    if thread.is_alive():
+      # check the thread every 100ms
+      self.after(100, lambda: self.monitor_manage_file(thread, next_command))
+    else:
+      #delete load window
+      self.winLoad.destroy()
+      #put window in front
+      self.lift()
+      if(next_command == "download"):
+        self.ultimate_download()
+      elif(next_command == "next_window"):
+        self.ultimate_next_window()
+
+  def download(self):
+    #check if file is loadid
+    if(self.isFileLoad):
+      #Check if value are right
+      if(not self.is_value_ok()):
+        return
+
+      #ask directory to save file
+      file = filedialog.asksaveasfile(parent=self, filetypes=[('EXCEL','.xlsx')], mode='w', defaultextension=".xlsx")
+
+      #check if a file has been chosen
+      if file:
+        #save file temporaneous
+        self.file = file
+
+        #show loading windows
+        self.winLoad = wLd.LoadingWindow("Manage file...")
+        
+        #create thread to manage the file
+        manage_file_thread = ManageProtein(self)
+        manage_file_thread.start()
+        self.monitor_manage_file(manage_file_thread, "download")
+      else:
+        tk.messagebox.showerror(parent=self, title="Error", message="No directory selected")
+    else:
+      tk.messagebox.showerror(parent=self, title="Error", message="No files uploaded")
+
+  def ultimate_download(self):
+    #show loading windows
+    self.winLoad = wLd.LoadingWindow("Download file...")
+
+    #create thread to download file
+    download_thread = AsyncDownload(self.df_tmp, self.file)
+    download_thread.start()
+    self.monitor_download(download_thread)
+
+  def previous_window(self):
+    #hide this window
+    #self.withdraw()
+    #Destroy this window
+    self.destroy()
+
+    #show last window
+    self.wn_previous.deiconify()
+    self.wn_previous.lift()
+
+  def next_window(self):
+    #check if file is loadid
+    if(self.isFileLoad):
+      #Check if value are right
+      if(not self.is_value_ok()):
+        return
+        
+      #show loading windows
+      self.winLoad = wLd.LoadingWindow("Manage file...")
+      
+      #create thread to manage the file
+      manage_file_thread = ManageProtein(self)
+      manage_file_thread.start()
+      self.monitor_manage_file(manage_file_thread, "next_window")
+    else:
+      tk.messagebox.showerror(parent=self, title="Error", message="No files uploaded")
+
+  def ultimate_next_window(self):
+    #Preapre a dict
+    myDict = {}
+    myDict["mode"] = 'proteins'
+    myDict["fill0"] = self.var_chc_fill_zero.get()
+
+    #hide this window
+    self.withdraw()
+    #create new window
+    self.windowTaxonomic = wTxAn.TaxonomicWindow(self.wn_root, self, self.df_tmp, myDict)
+
+'''
+if __name__ == "__main__":
+  app = ProteinsWindow()
+  app.mainloop()
+'''
