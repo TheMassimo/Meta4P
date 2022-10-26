@@ -1,2 +1,4 @@
 #personal folder to not push
+/__pycache__*
 /build*
+/dist*

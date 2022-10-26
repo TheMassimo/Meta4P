@@ -64,13 +64,13 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
     self.lbl_descLoadGenerator = tk.Label(self, text='A MetaPAnnA output file is required\nto retrieve sample column headers',width=30,font=self.font_subtitle)  
     self.lbl_descLoadGenerator.grid(row=3, column=0, padx=0, pady=(20,0))
     #Load button
-    self.btn_loadGenerator = tk.Button(self, text='Upload File', width=25, command=self.upload_general_file)
+    self.btn_loadGenerator = tk.Button(self, text='Upload file', width=27, command=self.upload_general_file)
     self.btn_loadGenerator.grid(row=4, column=0, padx=5, pady=5)
     #label generate
     self.lbl_generatorFile = tk.Label(self, text='No file',width=30,font=self.font_base)
     self.lbl_generatorFile.grid(row=5, column=0, padx=5, pady=5)
     #Done button
-    self.btn_downloadTemplate = tk.Button(self, text='Download conversion file', font=self.font_button, width=25, command=self.download_template)
+    self.btn_downloadTemplate = tk.Button(self, text='Download conversion file', font=self.font_button, width=27, command=self.download_template)
     self.btn_downloadTemplate.grid(row=6, column=0, padx=5, pady=5)
 
     #Only for space
@@ -91,7 +91,7 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
     self.lbl_descLoadTemplate = tk.Label(self, text='Modified conversion file with\nnew sample column headers\nand/or sample order',width=30,font=self.font_subtitle)  
     self.lbl_descLoadTemplate.grid(row=3, column=2, padx=0, pady=(20,0))
     #Load Template
-    self.btn_loadTemplate = tk.Button(self, text='Upload File', width=25, font=self.font_button, command=self.upload_template_file)
+    self.btn_loadTemplate = tk.Button(self, text='Upload file', width=27, font=self.font_button, command=self.upload_template_file)
     self.btn_loadTemplate.grid(row=4, column=2, padx=5, pady=5)
     #label template
     self.lbl_templateFile = tk.Label(self, text='No file',width=30,font=self.font_base)
@@ -108,7 +108,7 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
     self.lbl_descLoadEditable = tk.Label(self, text='MetaPAnnA outputs with sample\ncolumns to rename/reorder',width=30,font=self.font_subtitle)  
     self.lbl_descLoadEditable.grid(row=3, column=4, padx=0, pady=(20,0))
     #Button for Load File to edit
-    self.btn_loadEditable = tk.Button(self, text='Upload file(s)', font=self.font_button, width=25, command=self.upload_editable_file)
+    self.btn_loadEditable = tk.Button(self, text='Upload file(s)', font=self.font_button, width=27, command=self.upload_editable_file)
     self.btn_loadEditable.grid(row=4, column=4, padx=5, pady=5)
     #label template
     self.lbl_editableFile = tk.Label(self, text='No file',width=30,font=self.font_base)
@@ -123,7 +123,7 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
     self.lbl_loadEditable = tk.Label(self, text='Rename/reorder',width=25,font=self.font_title)  
     self.lbl_loadEditable.grid(row=1, column=6, padx=6, pady=6)
     #Final Done button
-    self.btn_rename = tk.Button(self, text='Rename/reorder', font=self.font_button, width=25, command=self.download_final)
+    self.btn_rename = tk.Button(self, text='Rename/reorder sample columns', font=self.font_button, width=27, command=self.download_final)
     self.btn_rename.grid(row=4, column=6, padx=5, pady=5)
 
 
