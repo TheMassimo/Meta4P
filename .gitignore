@@ -1,4 +1,7 @@
-#personal folder to not push
+#folder to not push
 /__pycache__*
 /build*
 /dist*
+
+#file to not push
+*.spec

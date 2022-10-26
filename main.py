@@ -10,4 +10,3 @@ import WindowMenu as wMn
 windowMenu = wMn.MenuWindow()
 #pass main loop NOT REMOVE THIS!!!
 windowMenu.mainloop()
-
