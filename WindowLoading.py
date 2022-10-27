@@ -8,6 +8,9 @@ class LoadingWindow(tk.Toplevel):
   def __init__(self, loading_text="Loading..."):
     super().__init__()
 
+    #change icon
+    self.iconbitmap("MetaPAnnA_icon.ico")
+
     # configure the root window
     self.title('Loading')
     self.geometry('417x130')

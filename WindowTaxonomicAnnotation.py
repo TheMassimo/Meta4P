@@ -25,6 +25,9 @@ class TaxonomicWindow(tk.Toplevel): #tk.Tk):
   def __init__(self, wn_root, wn_previous, previousDf, previousDict):
     super().__init__()
 
+    #change icon
+    self.iconbitmap("MetaPAnnA_icon.ico")
+
     #take the root window
     self.wn_root = wn_root
     #take the previous window
@@ -158,7 +161,7 @@ class TaxonomicWindow(tk.Toplevel): #tk.Tk):
       #self.lbl_loadedFile['text'] = os.path.basename(filepath)
 
       #show loading windows
-      self.winLoad = wLd.LoadingWindow("Upload file...")
+      self.winLoad = wLd.LoadingWindow("Uploading file...")
 
       #create thread to load file
       upload_thread = AsyncUpload(filepath)
@@ -193,7 +196,7 @@ class TaxonomicWindow(tk.Toplevel): #tk.Tk):
         self.file = file
 
         #show loading windows
-        self.winLoad = wLd.LoadingWindow("Manage file...")
+        self.winLoad = wLd.LoadingWindow("Managing file...")
         
         #create thread to manage the file
         manage_file_thread = ManageTaxonomic(self)
@@ -206,7 +209,7 @@ class TaxonomicWindow(tk.Toplevel): #tk.Tk):
 
   def ultimate_download(self):
     #show loading windows
-    self.winLoad = wLd.LoadingWindow("Download file...")
+    self.winLoad = wLd.LoadingWindow("Downloading file...")
 
     #create thread to download file
     download_thread = AsyncDownload(self.df_tmp, self.file)
@@ -227,7 +230,7 @@ class TaxonomicWindow(tk.Toplevel): #tk.Tk):
     #check if file is loadid
     if(self.isFileLoad):
       #show loading windows
-      self.winLoad = wLd.LoadingWindow("Manage file...")
+      self.winLoad = wLd.LoadingWindow("Managing file...")
       
       #create thread to manage the file
       manage_file_thread = ManageTaxonomic(self)

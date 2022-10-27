@@ -14,6 +14,9 @@ class MenuWindow(tk.Tk): #tk.Toplevel):
     def __init__(self):
         super().__init__()
 
+        #change icon
+        self.iconbitmap("MetaPAnnA_icon.ico")
+
         # configure the root window
         self.title('MetaPAnnA') #Meta Protein Annotation Aggregation
         self.geometry('405x270')

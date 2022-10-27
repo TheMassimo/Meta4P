@@ -28,6 +28,9 @@ class PSMsWindow(tk.Toplevel): #tk.Tk):
   def __init__(self, wn_previous):
     super().__init__()
 
+    #change icon
+    self.iconbitmap("MetaPAnnA_icon.ico")
+
     #take the root window (in this case is the same that previous)
     self.wn_root = wn_previous
     #take the previous window
@@ -96,7 +99,7 @@ class PSMsWindow(tk.Toplevel): #tk.Tk):
     self.chc_high.config( font = self.font_checkbox )
     
     #Description Label
-    self.lbl_description = tk.Label(self,text='Master Protein Description', width=20, font=self.font_title)  
+    self.lbl_description = tk.Label(self,text='Master Protein Description', width=22, font=self.font_title)  
     self.lbl_description.grid(row=2, column=2, columnspan=2, padx=6, pady=6)
     #Radio button frame
     self.rbd_frame = Frame(self, bg="red", width=20, height=20)
@@ -139,6 +142,9 @@ class PSMsWindow(tk.Toplevel): #tk.Tk):
     #MakedAs label
     self.lbl_marked = tk.Label(self,text='Marker', width=20, font=self.font_title)  
     self.lbl_marked.grid(row=2, column=4, padx=6, pady=6)
+    #Only for space
+    self.lbl_space_1 = tk.Label(self, text='',width=20,font=self.font_up_base)
+    self.lbl_space_1.grid(row=6, column=4, padx=5, pady=5)
 
 
     ### right area ###
@@ -151,6 +157,7 @@ class PSMsWindow(tk.Toplevel): #tk.Tk):
     self.chc_fill_zero = tk.Checkbutton(self, text='Replace missing values with 0', width=32, anchor="w", variable=self.var_chc_fill_zero, onvalue=1, offvalue=0)
     self.chc_fill_zero.grid(row=2, column=5, padx=5, pady=5)
     self.chc_fill_zero.config( font = self.font_checkbox )
+
 
     #put this window up
     self.lift()
@@ -245,7 +252,7 @@ class PSMsWindow(tk.Toplevel): #tk.Tk):
     for x in markedList:
       self.var_chcs_marked.append(IntVar(value=1))
       self.chcs_marked.append( tk.Checkbutton(self, text=x, width=20, anchor="w", variable=self.var_chcs_marked[i], onvalue=1, offvalue=0) )
-      self.chcs_marked[i].grid(row=(i+actual_marked_row), column=actual_marked_column, padx=(50,0))
+      self.chcs_marked[i].grid(row=(i+actual_marked_row), column=actual_marked_column, padx=(50,0), pady=5)
       self.chcs_marked[i].select()
       self.chcs_marked[i].config( font = self.font_checkbox )
       i = i+1
@@ -266,7 +273,7 @@ class PSMsWindow(tk.Toplevel): #tk.Tk):
       #self.lbl_loadedFile['text'] = os.path.basename(filepath)
 
       #show loading windows
-      self.winLoad = wLd.LoadingWindow("Upload file...")
+      self.winLoad = wLd.LoadingWindow("Uploading file...")
 
       #create thread to load file
       upload_thread = AsyncUpload(filepath)
@@ -319,7 +326,7 @@ class PSMsWindow(tk.Toplevel): #tk.Tk):
         self.file = file
 
         #show loading windows
-        self.winLoad = wLd.LoadingWindow("Manage file...")
+        self.winLoad = wLd.LoadingWindow("Managing file...")
         
         #create thread to manage the file
         manage_file_thread = ManagePSMs(self)
@@ -332,7 +339,7 @@ class PSMsWindow(tk.Toplevel): #tk.Tk):
 
   def ultimate_download(self):
     #show loading windows
-    self.winLoad = wLd.LoadingWindow("Download file...")
+    self.winLoad = wLd.LoadingWindow("Downloading file...")
 
     #create thread to download file
     download_thread = AsyncDownload(self.df_tmp, self.file)
@@ -353,7 +360,7 @@ class PSMsWindow(tk.Toplevel): #tk.Tk):
     #check if file is loadid
     if(self.isFileLoad):
       #show loading windows
-      self.winLoad = wLd.LoadingWindow("Manage file...")
+      self.winLoad = wLd.LoadingWindow("Managing file...")
       
       #create thread to manage the file
       manage_file_thread = ManagePSMs(self)

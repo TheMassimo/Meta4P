@@ -27,6 +27,9 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
   def __init__(self, wn_root, wn_previous, previousDf, previousDict):
     super().__init__()
 
+    #change icon
+    self.iconbitmap("MetaPAnnA_icon.ico")
+
     #take the root window
     self.wn_root = wn_root
     #take the previous window
@@ -81,7 +84,7 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
         #self.chcs_taxonomic[i].select()
         i = i+1
     else:
-      self.lbl_noTaxonomic = tk.Label(self, text='No result', width=20, font=self.font_up_base)  
+      self.lbl_noTaxonomic = tk.Label(self, text='No annotations', width=20, font=self.font_up_base)  
       self.lbl_noTaxonomic.grid(row=1, column=0, padx=5, pady=5)
 
     #Choose Functional label
@@ -106,8 +109,8 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
       self.lbl_keggOnline = tk.Label(self, text='Retrieve KEGG name', width=20, font=self.font_kegg_title)  
       self.lbl_keggOnline.grid(row=i, column=1, padx=6, pady=6)
       #label description
-      self.lbl_keggOnline = tk.Label(self, text='(working internet connection needed)', width=30, font=self.font_subtitle)  
-      self.lbl_keggOnline.grid(row=(i+1), column=1, padx=6, pady=0)
+      self.lbl_keggOnline_info = tk.Label(self, text='(working internet connection needed)', width=30, font=self.font_subtitle)  
+      self.lbl_keggOnline_info.grid(row=(i+1), column=1, padx=6, pady=0)
       #checkbox
       self.var_chcs_kegg = IntVar(value=1)
       self.chcs_kegg = tk.Checkbutton(self, text="yes", width=20, anchor="w", variable=self.var_chcs_kegg, onvalue=1, offvalue=0)
@@ -115,7 +118,7 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
       self.chcs_kegg.select()
       self.chcs_kegg.config( font = self.font_checkbox )
     else:
-      self.lbl_noFunctional = tk.Label(self, text='No result', width=20, font=self.font_up_base)  
+      self.lbl_noFunctional = tk.Label(self, text='No annotations', width=20, font=self.font_up_base)  
       self.lbl_noFunctional.grid(row=1, column=1, padx=5, pady=5)
   
     #Choose Union label
@@ -167,7 +170,7 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
       self.btn_remove_all.grid(row=3, column=4, rowspan=2, padx=10, pady=6)
     else:
       #Choose Union label
-      self.lbl_noAnnotation = tk.Label(self, text='No enough annotations', width=36, font=self.font_up_base)  
+      self.lbl_noAnnotation = tk.Label(self, text='Not enough annotations', width=36, font=self.font_up_base)  
       self.lbl_noAnnotation.grid(row=1, column=2, columnspan=3, sticky='EW', padx=6, pady=6 )
 
     #chek if there are at least one annotation file
@@ -178,7 +181,6 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
 
       #option to extra table download
       self.lbl_sup_tab = tk.Label(self, text='Supplementary tables',width=25,font=self.font_title)
-      self.lbl_sup_tab.grid(row=self.max_row+1, column=2, columnspan=2, padx=6, pady=6)
       #checkbox text according to start choose
       box_text = "Feature-related peptide counts"
       if(self.workDict["mode"] == 'proteins'):
@@ -186,9 +188,18 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
       #checkbox
       self.var_chcs_sup = IntVar(value=0)
       self.chcs_sup = tk.Checkbutton(self, text=box_text, width=25, variable=self.var_chcs_sup, onvalue=1, offvalue=0)
-      self.chcs_sup.grid(row=self.max_row+2, column=2, columnspan=2, padx=5, pady=5)
       self.chcs_sup.config( font = self.font_checkbox )
       #self.chcs_sup.select()
+      #control to put in the right way the label and checbox, according to kegg
+      if( hasattr(self, 'lbl_keggOnline') ):
+        #get info from kegg online lbl
+        info = self.lbl_keggOnline.grid_info()
+        need_row = info["row"]
+        self.lbl_sup_tab.grid(row=need_row, column=2, columnspan=2, padx=6, pady=6)
+        self.chcs_sup.grid(row=need_row+2, column=2, columnspan=2, padx=5, pady=5)
+      else:
+        self.lbl_sup_tab.grid(row=self.max_row+1, column=2, columnspan=2, padx=6, pady=6)
+        self.chcs_sup.grid(row=self.max_row+2, column=2, columnspan=2, padx=5, pady=5)
 
     if( (not self.workDict["taxonomic"]) and (not self.workDict["functional"]) ):
       #Only for space
@@ -312,7 +323,7 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
       my_list = self.create_list()
 
       #show loading windows
-      self.winLoad = wLd.LoadingWindow()
+      self.winLoad = wLd.LoadingWindow("Downloading file(s)...")
 
       #create thread to download file
       #get kegg online checkbox value

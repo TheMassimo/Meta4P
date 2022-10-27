@@ -28,6 +28,9 @@ class ProteinsWindow(tk.Toplevel): #tk.Tk):
   def __init__(self, wn_previous):
     super().__init__()
 
+    #change icon
+    self.iconbitmap("MetaPAnnA_icon.ico")
+
     #take the root window (in this case is the same that previous)
     self.wn_root = wn_previous
     #take the previous window
@@ -100,7 +103,7 @@ class ProteinsWindow(tk.Toplevel): #tk.Tk):
     self.chc_high.config( font = self.font_checkbox )
     
     #Description Label
-    self.lbl_description = tk.Label(self,text='Protein Description', width=20, font=self.font_title)  
+    self.lbl_description = tk.Label(self,text='Protein Description', width=22, font=self.font_title)  
     self.lbl_description.grid(row=2, column=2, columnspan=2, padx=6, pady=6)
     #Radio button frame
     self.rbd_frame = Frame(self, bg="red", width=20, height=20)
@@ -318,7 +321,7 @@ class ProteinsWindow(tk.Toplevel): #tk.Tk):
       c = i
       self.var_chcs_marked.append(IntVar(value=1))
       self.chcs_marked.append( tk.Checkbutton(self, text=x, width=20, anchor="w", variable=self.var_chcs_marked[c], onvalue=1, offvalue=0) )
-      self.chcs_marked[i].grid(row=(i+actual_marked_row), column=actual_marked_column, padx=(50,0))
+      self.chcs_marked[i].grid(row=(i+actual_marked_row), column=actual_marked_column, padx=(50,0), pady=5)
       self.chcs_marked[i].select()
       self.chcs_marked[i].config( font = self.font_checkbox )
       i = i+1
@@ -343,7 +346,7 @@ class ProteinsWindow(tk.Toplevel): #tk.Tk):
       #self.lbl_loadedFile['text'] = os.path.basename(filepath)
 
       #show loading windows
-      self.winLoad = wLd.LoadingWindow("Upload file...")
+      self.winLoad = wLd.LoadingWindow("Uploading file...")
 
       #create thread to load file
       upload_thread = AsyncUpload(filepath)
@@ -422,7 +425,7 @@ class ProteinsWindow(tk.Toplevel): #tk.Tk):
         self.file = file
 
         #show loading windows
-        self.winLoad = wLd.LoadingWindow("Manage file...")
+        self.winLoad = wLd.LoadingWindow("Managing file...")
         
         #create thread to manage the file
         manage_file_thread = ManageProtein(self)
@@ -435,7 +438,7 @@ class ProteinsWindow(tk.Toplevel): #tk.Tk):
 
   def ultimate_download(self):
     #show loading windows
-    self.winLoad = wLd.LoadingWindow("Download file...")
+    self.winLoad = wLd.LoadingWindow("Downloading file...")
 
     #create thread to download file
     download_thread = AsyncDownload(self.df_tmp, self.file)
@@ -460,7 +463,7 @@ class ProteinsWindow(tk.Toplevel): #tk.Tk):
         return
         
       #show loading windows
-      self.winLoad = wLd.LoadingWindow("Manage file...")
+      self.winLoad = wLd.LoadingWindow("Managing file...")
       
       #create thread to manage the file
       manage_file_thread = ManageProtein(self)

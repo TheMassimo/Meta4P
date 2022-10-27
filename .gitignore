@@ -5,3 +5,4 @@
 
 #file to not push
 *.spec
+*.ico

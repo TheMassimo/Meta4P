@@ -24,6 +24,9 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
   def __init__(self, wn_root, wn_previous):
     super().__init__()
 
+    #change icon
+    self.iconbitmap("MetaPAnnA_icon.ico")
+
     #take the root window
     self.wn_root = wn_root
     #take the previous window
@@ -256,7 +259,7 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
       #self.lbl_templateFile['text'] = os.path.basename(filepath)
 
       #show loading windows
-      self.winLoad = wLd.LoadingWindow()
+      self.winLoad = wLd.LoadingWindow("Uploading file...")
 
       #create thread to load file
       upload_thread = AsyncUpload(filepath)
@@ -279,7 +282,7 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
       #self.lbl_generatorFile['text'] = os.path.basename(filepath)
 
       #show loading windows
-      self.winLoad = wLd.LoadingWindow()
+      self.winLoad = wLd.LoadingWindow("Uploading file(s)...")
 
       #create thread to load file
       upload_thread = AsyncUpload(filepath)
@@ -297,7 +300,7 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
       #check if a file has been chosen
       if file:
         #show loading windows
-        self.winLoad = wLd.LoadingWindow()
+        self.winLoad = wLd.LoadingWindow("Downloading file...")
 
         #create thread to download file
         download_thread = AsyncDownload(self.df_gn, file)
@@ -317,7 +320,7 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
     else:
 
       #show loading windows
-      self.winLoad = wLd.LoadingWindow()
+      self.winLoad = wLd.LoadingWindow("Renaming file(s)...")
 
       #create thread to download file
       download_thread = AsyncRenameFile(self.editable_paths, self.df_tm)

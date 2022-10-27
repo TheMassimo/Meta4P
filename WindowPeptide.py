@@ -25,6 +25,9 @@ import WindowTaxonomicAnnotation as wTxAn
 class PeptideWindow(tk.Toplevel): #tk.Tk):
   def __init__(self, wn_previous):
     super().__init__()
+
+    #change icon
+    self.iconbitmap("MetaPAnnA_icon.ico")
     
     #take the root window (in this case is the same that previous)
     self.wn_root = wn_previous
@@ -102,7 +105,7 @@ class PeptideWindow(tk.Toplevel): #tk.Tk):
     self.lbl_quanInfo.grid(row=6, column=1, padx=6, pady=(24,6))
     
     #Description Label
-    self.lbl_description = tk.Label(self,text='Master Protein Description', width=21, font=self.font_title)  
+    self.lbl_description = tk.Label(self,text='Master Protein Description', width=22, font=self.font_title)  
     self.lbl_description.grid(row=2, column=2, columnspan=2, padx=6, pady=6)
     #Radio button frame
     self.rbd_frame = Frame(self, bg="red", width=20, height=20)
@@ -331,7 +334,7 @@ class PeptideWindow(tk.Toplevel): #tk.Tk):
     for x in markedList:
       self.var_chcs_marked.append(IntVar(value=1))
       self.chcs_marked.append( tk.Checkbutton(self, text=x, width=20, anchor="w", variable=self.var_chcs_marked[i], onvalue=1, offvalue=0) )
-      self.chcs_marked[i].grid(row=(i+actual_marked_row), column=actual_marked_column, padx=(50,0))
+      self.chcs_marked[i].grid(row=(i+actual_marked_row), column=actual_marked_column, padx=(50,0), pady=5)
       self.chcs_marked[i].select()
       self.chcs_marked[i].config( font = self.font_checkbox )
       i = i+1
@@ -359,7 +362,7 @@ class PeptideWindow(tk.Toplevel): #tk.Tk):
     for x in quanList:
       self.var_chcs_quant.append(IntVar(value=0))
       self.chcs_quant.append( tk.Checkbutton(self, text=x, width=20, anchor="w", variable=self.var_chcs_quant[i], onvalue=1, offvalue=0) )
-      self.chcs_quant[i].grid(row=(i+actual_quantInfo_row), column=actual_quantInfo_column, padx=(50,0))
+      self.chcs_quant[i].grid(row=(i+actual_quantInfo_row), column=actual_quantInfo_column, padx=(50,0), pady=5)
       self.chcs_quant[i].config( font = self.font_checkbox )
       if(x == 'Shared'):
         self.chcs_quant[i].select()
@@ -385,7 +388,7 @@ class PeptideWindow(tk.Toplevel): #tk.Tk):
       #self.lbl_loadedFile['text'] = os.path.basename(filepath)
 
       #show loading windows
-      self.winLoad = wLd.LoadingWindow("Upload file...")
+      self.winLoad = wLd.LoadingWindow("Uploading file...")
 
       #create thread to load file
       upload_thread = AsyncUpload(filepath)
@@ -464,7 +467,7 @@ class PeptideWindow(tk.Toplevel): #tk.Tk):
         self.file = file
 
         #show loading windows
-        self.winLoad = wLd.LoadingWindow("Manage file...")
+        self.winLoad = wLd.LoadingWindow("Managing file...")
         
         #create thread to manage the file
         manage_file_thread = ManagePeptide(self)
@@ -477,7 +480,7 @@ class PeptideWindow(tk.Toplevel): #tk.Tk):
 
   def ultimate_download(self):
     #show loading windows
-    self.winLoad = wLd.LoadingWindow("Download file...")
+    self.winLoad = wLd.LoadingWindow("Downloading file...")
 
     #create thread to download file
     download_thread = AsyncDownload(self.df_tmp, self.file)
@@ -502,7 +505,7 @@ class PeptideWindow(tk.Toplevel): #tk.Tk):
         return
 
       #show loading windows
-      self.winLoad = wLd.LoadingWindow("Manage file...")
+      self.winLoad = wLd.LoadingWindow("Managing file...")
       
       #create thread to manage the file
       manage_file_thread = ManagePeptide(self)
