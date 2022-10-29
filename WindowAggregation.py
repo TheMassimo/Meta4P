@@ -28,7 +28,8 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     super().__init__()
 
     #change icon
-    self.iconbitmap("MetaPAnnA_icon.ico")
+    img=PhotoImage(file="C:\\Users\\maxim\\Desktop\\MetaPAnnA\\MP_icon.png")
+    self.iconphoto(False,img)
 
     #take the root window
     self.wn_root = wn_root

@@ -15,7 +15,8 @@ class MenuWindow(tk.Tk): #tk.Toplevel):
         super().__init__()
 
         #change icon
-        self.iconbitmap("MetaPAnnA_icon.ico")
+        img=PhotoImage(file="C:\\Users\\maxim\\Desktop\\MetaPAnnA\\MP_icon.png")
+        self.iconphoto(False,img)
 
         # configure the root window
         self.title('MetaPAnnA') #Meta Protein Annotation Aggregation
