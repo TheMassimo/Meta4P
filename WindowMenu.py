@@ -9,14 +9,18 @@ import WindowProteins as wPr
 import WindowPeptide as wPe
 import WindowPSMs as wPS
 import WindowTemplate as wTm
+#import my multi threading function to upload and download file
+from MyMultiThreading import *
+
+
 
 class MenuWindow(tk.Tk): #tk.Toplevel):
     def __init__(self):
         super().__init__()
 
         #change icon
-        img=PhotoImage(file="C:\\Users\\maxim\\Desktop\\MetaPAnnA\\MP_icon.png")
-        self.iconphoto(False,img)
+        img = PhotoImage(file=resource_path("MP_icon.png"))
+        self.iconphoto(False, img)
 
         # configure the root window
         self.title('MetaPAnnA') #Meta Protein Annotation Aggregation

@@ -3,14 +3,17 @@ import tkinter as tk
 from tkinter import *
 from tkinter import ttk
 
+#import my multi threading function to upload and download file
+from MyMultiThreading import *
+
 class LoadingWindow(tk.Toplevel):
 
   def __init__(self, loading_text="Loading..."):
     super().__init__()
 
     #change icon
-    img=PhotoImage(file="C:\\Users\\maxim\\Desktop\\MetaPAnnA\\MP_icon.png")
-    self.iconphoto(False,img)
+    img = PhotoImage(file=resource_path("MP_icon.png"))
+    self.iconphoto(False, img)
 
     # configure the root window
     self.title('Loading')

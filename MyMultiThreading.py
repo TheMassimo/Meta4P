@@ -16,6 +16,7 @@ from tkinter.ttk import Separator, Style
 # Standard library packages
 import io
 import os
+import sys
 
 # Import Biopython modules to interact with KEGG
 #from Bio import SeqIO
@@ -27,6 +28,22 @@ import os
 from urllib.request import urlopen
 import ssl
 
+#utility for load image
+def resource_path(relative_path):
+  try:
+    base_path = sys._MEIPASS
+  except Exception:
+    base_path = os.path.abspath(".")
+
+  return os.path.join(base_path, relative_path)
+
+def resource_path_2(relative_path):
+  base_path = getattr(
+    sys,
+    '_MEIPASS',
+    os.path.dirname(os.path.abspath(__file__)) )
+  
+  return os.path.join(base_path, relative_path)
 
 #Request for KEGG data
 def _q(op, arg1, arg2=None, arg3=None):

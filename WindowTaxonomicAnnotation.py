@@ -26,8 +26,8 @@ class TaxonomicWindow(tk.Toplevel): #tk.Tk):
     super().__init__()
 
     #change icon
-    img=PhotoImage(file="C:\\Users\\maxim\\Desktop\\MetaPAnnA\\MP_icon.png")
-    self.iconphoto(False,img)
+    img = PhotoImage(file=resource_path("MP_icon.png"))
+    self.iconphoto(False, img)
 
     #take the root window
     self.wn_root = wn_root
