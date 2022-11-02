@@ -174,7 +174,7 @@ class ProteinsWindow(tk.Toplevel): #tk.Tk):
 
     #Master checkbox
     self.var_chc_master = IntVar(value=0)
-    self.chc_master = tk.Checkbutton(self, text='Master protein only', width=32, anchor="w", variable=self.var_chc_master, onvalue=1, offvalue=0)
+    self.chc_master = tk.Checkbutton(self, text='Master proteins only', width=32, anchor="w", variable=self.var_chc_master, onvalue=1, offvalue=0)
     self.chc_master.grid(row=2, column=5, padx=5, pady=5)
     self.chc_master.config( font = self.font_checkbox )
     

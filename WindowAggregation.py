@@ -52,8 +52,9 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     self.geometry('1060x580')
 
     #fixed list to use
-    self.list_taxonomic = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
-    self.list_functional = ["COG_category", "GOs", "EC", "KEGG_ko", "KEGG_Pathway", "KEGG_Module", "KEGG_Reaction", "CAZy"]
+    self.list_taxonomic             = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
+    self.list_functional            = ["COG_category", "GOs", "EC", "KEGG_ko", "KEGG_Pathway", "KEGG_Module", "KEGG_Reaction", "CAZy"]
+    self.list_functional_to_display = ["COG_category", "GOs", "EC", "KEGG KO", "KEGG pathway", "KEGG module", "KEGG reaction", "CAZy"]
 
     if(len(self.list_taxonomic) > len(self.list_functional)):
       self.max_row = len(self.list_taxonomic)
@@ -95,7 +96,7 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
       i = 0
       self.chcs_functional = []
       self.var_chcs_functional = []
-      for x in self.list_functional:
+      for x in self.list_functional_to_display:
         c = i
         self.var_chcs_functional.append(IntVar(value=0))
         self.chcs_functional.append( tk.Checkbutton(self, text=x, width=20, anchor="w", variable=self.var_chcs_functional[c], onvalue=1, offvalue=0) )
@@ -136,8 +137,8 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
       self.opt_taxonomic.config( font = self.font_checkbox )
 
       #option to functional
-      self.opt_functional_var = StringVar(value=self.list_functional[0]) # dafault value
-      self.opt_functional = tk.OptionMenu(self, self.opt_functional_var, *self.list_functional)
+      self.opt_functional_var = StringVar(value=self.list_functional_to_display[0]) # dafault value
+      self.opt_functional = tk.OptionMenu(self, self.opt_functional_var, *self.list_functional_to_display)
       self.opt_functional.grid(row=1, column=3, padx=10, pady=6)
       self.opt_functional.config(width=18)
       self.opt_functional.config( font = self.font_checkbox )
@@ -177,7 +178,7 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     #chek if there are at least one annotation file
     if(self.workDict["taxonomic"] or self.workDict["functional"]):
       #Download button
-      self.btn_remove_all = tk.Button(self, text='Download tables', font=self.font_button, width=18, command=self.download)
+      self.btn_remove_all = tk.Button(self, text='Download table(s)', font=self.font_button, width=18, command=self.download)
       self.btn_remove_all.grid(row=6, column=4, rowspan=2, padx=10, pady=6)
 
       #option to extra table download
@@ -308,9 +309,16 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
         inside_list = []
         #split and pass to 2 different position of inside_list
         col_1, col_2 = con_item.split('+')
+
+        #get the right name of coloumn
+        name_index = self.list_functional_to_display.index(col_2)
+        col_2 = self.list_functional[name_index]
+
+        #add this elements to list
         inside_list.extend([col_1, col_2])
         #insert "inside_list" inside "my_list"
         my_list.append(inside_list)
+
 
     return my_list
 
