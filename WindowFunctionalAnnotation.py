@@ -123,7 +123,7 @@ class FunctionalWindow(tk.Toplevel): #tk.Tk):
         #read it to create some button in the window and mark if the file is load
         self.isFileLoad = self.manage_the_upload()
       else:
-        tk.messagebox.showerror(parent=self, title="Error", message="File not upload\nIt is probably in use by another program")
+        tk.messagebox.showerror(parent=self, title="Error", message="File not uploaded\nIt is probably in use by another program")
 
   def monitor_download(self, thread):
     if thread.is_alive():

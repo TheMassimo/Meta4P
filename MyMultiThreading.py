@@ -310,7 +310,7 @@ class AsyncDownload_Aggregation(Thread):
     #for every list element create a file
     for element in self.my_list:
       #get all F cols
-      cols = [col for col in self.df.columns if 'F' in col]
+      cols = list(self.df.filter(regex=r'F\d+'))
       #add in first place the col_name of column that i want aggragate
       cols.extend(element)
       #create a tmp df

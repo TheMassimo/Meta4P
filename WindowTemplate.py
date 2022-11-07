@@ -157,7 +157,7 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
         #read it to create some button in the window and mark if the file is load
         self.isLoad_df_tm = True
       else:
-        tk.messagebox.showerror(parent=self, title="Error", message="File not upload\nIt is probably in use by another program")
+        tk.messagebox.showerror(parent=self, title="Error", message="File not uploaded\nIt is probably in use by another program")
 
   def monitor_upload_generator(self, thread):
     if thread.is_alive():
@@ -176,7 +176,7 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
         #read it to create some button in the window and mark if the file is load
         self.isLoad_df_gn = True
       else:
-        tk.messagebox.showerror(parent=self, title="Error", message="File not upload\nIt is probably in use by another program")
+        tk.messagebox.showerror(parent=self, title="Error", message="File not uploaded\nIt is probably in use by another program")
 
   def monitor_download_template(self, thread):
     if thread.is_alive():
