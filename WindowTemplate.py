@@ -205,10 +205,8 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
         tk.messagebox.showerror(parent=self, title="Error", message="One or more files not saved\nThey are probably in use by another program")
 
   def manage_the_upload_generator(self):
-    #remove unused coloum
-    self.df_gn = self.df_gn.filter(like=': Sample')
     #get list of columns
-    allColumns = list(self.df_gn.columns)
+    allColumns = list(self.df_gn.filter(regex=r'F\d+'))
     #make one row for every column
     self.df_gn = pd.DataFrame(allColumns)
     #extrat only F* word
@@ -342,4 +340,7 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
 if __name__ == "__main__":
   app = TemplateWindow()
   app.mainloop()
+
+  #remove unused coloum
+  self.df_gn = self.df_gn.filter(like=': Sample')
 '''
