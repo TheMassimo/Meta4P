@@ -1,2 +1,2 @@
 Download last version at:
-https://github.com/TheMassimo/MetaPAnna/releases
+https://github.com/TheMassimo/Meta4P/releases
