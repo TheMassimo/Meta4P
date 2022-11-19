@@ -29,7 +29,7 @@ class PSMsWindow(tk.Toplevel): #tk.Tk):
     super().__init__()
 
     #change icon
-    img = PhotoImage(file=resource_path("MP_icon.png"))
+    img = PhotoImage(file=resource_path("M4P_icon.png"))
     self.iconphoto(False, img)
 
     #take the root window (in this case is the same that previous)

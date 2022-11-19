@@ -19,11 +19,11 @@ class MenuWindow(tk.Tk): #tk.Toplevel):
         super().__init__()
 
         #change icon
-        img = PhotoImage(file=resource_path("MP_icon.png"))
+        img = PhotoImage(file=resource_path("M4P_icon.png"))
         self.iconphoto(False, img)
 
         # configure the root window
-        self.title('MetaPAnnA') #Meta Protein Annotation Aggregation
+        self.title('Meta4P') #Meta Protein Annotation Aggregation
         self.geometry('405x270')
 
         #font

@@ -12,7 +12,7 @@ class LoadingWindow(tk.Toplevel):
     super().__init__()
 
     #change icon
-    img = PhotoImage(file=resource_path("MP_icon.png"))
+    img = PhotoImage(file=resource_path("M4P_icon.png"))
     self.iconphoto(False, img)
 
     # configure the root window
