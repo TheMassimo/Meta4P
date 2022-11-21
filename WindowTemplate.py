@@ -65,7 +65,7 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
     self.lbl_descLoadGenerator = tk.Label(self, text='(skip if already available)',width=25,font=self.font_subtitle)  
     self.lbl_descLoadGenerator.grid(row=2, column=0, padx=0, pady=(0,20))
     #decription button loadGenerator
-    self.lbl_descLoadGenerator = tk.Label(self, text='A MetaPAnnA output file is required\nto retrieve sample column headers',width=30,font=self.font_subtitle)  
+    self.lbl_descLoadGenerator = tk.Label(self, text='A Meta4P output file is required\nto retrieve sample column headers',width=30,font=self.font_subtitle)  
     self.lbl_descLoadGenerator.grid(row=3, column=0, padx=0, pady=(20,0))
     #Load button
     self.btn_loadGenerator = tk.Button(self, text='Upload file', width=27, command=self.upload_general_file)
@@ -109,7 +109,7 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
     self.lbl_loadEditable = tk.Label(self, text='Select file(s) to edit',width=25,font=self.font_title)  
     self.lbl_loadEditable.grid(row=1, column=4, padx=6, pady=6)
     #decription button loadEditable
-    self.lbl_descLoadEditable = tk.Label(self, text='MetaPAnnA outputs with sample\ncolumns to rename/reorder',width=30,font=self.font_subtitle)  
+    self.lbl_descLoadEditable = tk.Label(self, text='Meta4P outputs with sample\ncolumns to rename/reorder',width=30,font=self.font_subtitle)  
     self.lbl_descLoadEditable.grid(row=3, column=4, padx=0, pady=(20,0))
     #Button for Load File to edit
     self.btn_loadEditable = tk.Button(self, text='Upload file(s)', font=self.font_button, width=27, command=self.upload_editable_file)
