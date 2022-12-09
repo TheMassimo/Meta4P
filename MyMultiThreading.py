@@ -1159,3 +1159,10 @@ for i in range(len(col_one_list)-1, -1, -1 ):
   index_to_do = col_one_list.index(old_cols[i])
   df.columns = df.columns.str.replace(col_one_list[index_to_do], col_two_list[index_to_do])
 '''
+
+'''
+#time import
+import time
+start = time.process_time()
+print(time.process_time() - start)
+'''
