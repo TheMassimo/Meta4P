@@ -6,8 +6,7 @@ from tkinter import *
 import WindowMenu as wMn
 
 
-#create window menu
+# crea window menu
 windowMenu = wMn.MenuWindow()
 #pass main loop NOT REMOVE THIS!!!
 windowMenu.mainloop()
-

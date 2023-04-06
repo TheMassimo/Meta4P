@@ -1,3 +1,10 @@
+#import config module for environmental variability
+import config
+#import my utility class and function
+import MyUtility
+#import my multi threading function to upload and download file
+from MyMultiThreading import *
+
 #tkinter import
 import tkinter as tk
 from tkinter import *
@@ -13,20 +20,18 @@ import os
 
 # importing the threading module
 from threading import Thread
-#import my multi threading function to upload and download file
-from MyMultiThreading import *
 
 #import loading window
 import WindowLoading as wLd
 #import next window
-import WindowFunctionalAnnotation as wFnAn
+import WindowFunctionalMenu as wFnMn
 
-class TaxonomicWindow(tk.Toplevel): #tk.Tk):
-  def __init__(self, wn_root, wn_previous, previousDf, previousDict):
+class StandardTaxonomicWindow(tk.Toplevel): #tk.Tk):
+  def __init__(self, wn_root, wn_previous, previousDf):
     super().__init__()
 
     #change icon
-    img = PhotoImage(file=resource_path("M4P_icon.png"))
+    img = PhotoImage(file=resource_path(config.icon))
     self.iconphoto(False, img)
 
     #take the root window
@@ -35,9 +40,7 @@ class TaxonomicWindow(tk.Toplevel): #tk.Tk):
     self.wn_previous = wn_previous
 
     #take the old df
-    self.df = previousDf;
-    #take the old dict
-    self.workDict = previousDict
+    self.df = previousDf
     #check if file is load
     self.isFileLoad = False
 
@@ -46,40 +49,30 @@ class TaxonomicWindow(tk.Toplevel): #tk.Tk):
 
     # configure the root window
     self.title('Taxonomic annotation')
-    self.geometry('420x280')
 
-    #fonts
-    self.font_title=('Calibri', 16, 'bold')
-    self.font_up_base = ('Calibri', 12, 'bold')
-    self.font_base = ('Calibri', 12)
-    self.font_button = ('Calibri', 10)
-    self.font_checkbox = ('Calibri', 10)
-
-
-    #Skip Step
-    self.btn_skip_step = tk.Button(self, text='Skip step', font=self.font_button, width=22,command=self.skip_window)
-    self.btn_skip_step.grid(row=0, column=0, padx=20, pady=5)
-    #Only for space
-    self.lbl_space_1 = tk.Label(self, text='',width=30,font=self.font_up_base)
-    self.lbl_space_1.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
     #Load annotation button
-    self.btn_loadFile = tk.Button(self, text='Upload annotation', font=self.font_button, width=22, command=self.upload_annotation_file)
-    self.btn_loadFile.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+    self.btn_loadFile = tk.Button(self, text='Upload annotation', font=config.font_button, width=22, command=self.upload_annotation_file)
+    self.btn_loadFile.grid(row=0, column=0, columnspan=2, padx=5, pady=5)
     #label annotation loaded
-    self.lbl_loadedFile = tk.Label(self, text='No file',width=30,font=self.font_up_base)
-    self.lbl_loadedFile.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+    self.lbl_loadedFile = tk.Label(self, text='No file',width=30,font=config.font_up_base)
+    self.lbl_loadedFile.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
     #Download button
-    self.btn_download = tk.Button(self, text='Download annotated table', font=self.font_button, width=22,command=self.download)
-    self.btn_download.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
-    #Only for space
-    self.lbl_space_2 = tk.Label(self, text='',width=30,font=self.font_up_base)
-    self.lbl_space_2.grid(row=5, column=0, columnspan=2, padx=5, pady=5)
+    self.btn_download = tk.Button(self, text='Download annotated table', font=config.font_button, width=22,command=self.download)
+    self.btn_download.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+
+    #Fill with unassigned
+    self.var_chc_unassigned = IntVar(value=0)
+    self.chc_unassigned = tk.Checkbutton(self, text='Replace missing values with \'unassigned\'',
+                                         width=32, anchor="w", variable=self.var_chc_unassigned, onvalue=1, offvalue=0)
+    self.chc_unassigned.grid(row=3, column=0, columnspan=2, padx=5, pady=(10,20))
+    self.chc_unassigned.config(font = config.font_checkbox )
+
     #Previous Step
-    self.btn_previous_step = tk.Button(self, text='🡸 Previous step', font=self.font_button, width=22,command=self.previous_window)
-    self.btn_previous_step.grid(row=6, column=0, padx=20, pady=5)
+    self.btn_previous_step = tk.Button(self, text='← Previous step', font=config.font_button, width=22,command=self.previous_window)
+    self.btn_previous_step.grid(row=4, column=0, padx=20, pady=5)
     #Next Step
-    self.btn_next_step = tk.Button(self, text='Next step 🡺', font=self.font_button, width=22,command=self.next_window)
-    self.btn_next_step.grid(row=6, column=1, padx=20, pady=5)
+    self.btn_next_step = tk.Button(self, text='Next step →', font=config.font_button, width=22,command=self.next_window)
+    self.btn_next_step.grid(row=4, column=1, padx=20, pady=5)
 
     #put this window up
     self.lift()
@@ -90,7 +83,7 @@ class TaxonomicWindow(tk.Toplevel): #tk.Tk):
     
   def on_closing(self):
     if tk.messagebox.askokcancel("Quit", "Do you want to quit?"):
-        self.wn_root.destroy()
+      self.wn_root.destroy()
 
   def monitor_upload(self, thread):
     if thread.is_alive():
@@ -128,10 +121,10 @@ class TaxonomicWindow(tk.Toplevel): #tk.Tk):
     #self.df_annotation.drop(['EC'], inplace=True, axis=1, errors='ignore')
 
     #create a valid list of columns and add abundaces columns
-    valid_columns = ['lca', 'superkingdom', 'kingdom', 'phylum',
-                     'class', 'order', 'family', 'genus', 'species']
+    valid_columns = ['lca', 'superkingdom', 'phylum', 'class', 'order',
+                     'family', 'genus', 'species']
     #insert in first position the first elment according to the type of the file
-    if(self.workDict["mode"] == 'proteins'):
+    if(MyUtility.workDict["mode"] == 'Proteins'):
       valid_columns.insert(0, 'Accession No.')
     else:
       valid_columns.insert(0, 'peptide')
@@ -150,7 +143,7 @@ class TaxonomicWindow(tk.Toplevel): #tk.Tk):
 
   def upload_annotation_file(self):
     #ask file name
-    filepath = filedialog.askopenfilename(parent=self, title="Open") #,filetypes=(("text files","*.txt"),("All files","*.*")))
+    filepath = filedialog.askopenfilename(parent=self, title="Open",filetypes=config.file_types)
 
     #check if a file has been chosen
     if filepath:
@@ -189,12 +182,12 @@ class TaxonomicWindow(tk.Toplevel): #tk.Tk):
     #check if file is loadid
     if(self.isFileLoad):
       #ask directory to save file
-      file = filedialog.asksaveasfile(parent=self, filetypes=[('EXCEL','.xlsx')], mode='w', defaultextension=".xlsx")
+      file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types, defaultextension=".xlsx")
 
       #check if a file has been chosen
-      if file:
+      if file_path:
         #save file temporaneous
-        self.file = file
+        self.file_path = file_path
 
         #show loading windows
         self.winLoad = wLd.LoadingWindow("Managing file...")
@@ -213,7 +206,7 @@ class TaxonomicWindow(tk.Toplevel): #tk.Tk):
     self.winLoad = wLd.LoadingWindow("Downloading file...")
 
     #create thread to download file
-    download_thread = AsyncDownload(self.df_tmp, self.file)
+    download_thread = AsyncDownload(self.df_tmp, self.file_path)
     download_thread.start()
     self.monitor_download(download_thread)
 
@@ -242,21 +235,21 @@ class TaxonomicWindow(tk.Toplevel): #tk.Tk):
 
   def ultimate_next_window(self):
     #Edit the previous dict
-    self.workDict["taxonomic"] = True
+    MyUtility.workDict["taxonomic"] = True
 
     #hide this window
     self.withdraw()
     #create new window
-    self.windowFunctional = wFnAn.FunctionalWindow(self.wn_root, self, self.df_tmp, self.workDict) 
+    self.windowFunctionalMenu = wFnMn.FunctionalMenuWindow(self.wn_root, self, self.df_tmp)
 
   def skip_window(self):
     #Edit the previous dict
-    self.workDict["taxonomic"] = False
+    MyUtility.workDict["taxonomic"] = False
 
     #hide this window
     self.withdraw()
     #create new window
-    self.windowFunctional = wFnAn.FunctionalWindow(self.wn_root, self, self.df, self.workDict)
+    self.windowFunctionalMenu = wFnMn.FunctionalMenuWindow(self.wn_root, self, self.df)
 
 
 '''

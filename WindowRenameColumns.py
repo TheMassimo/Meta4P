@@ -1,3 +1,10 @@
+#import config module for environmental variability
+import config
+#import my utility class and function
+import MyUtility
+#import my multi threading function to upload and download file
+from MyMultiThreading import *
+
 #tkinter import
 import tkinter as tk
 from tkinter import *
@@ -14,18 +21,16 @@ import os
 
 # importing the threading module
 from threading import Thread
-#import my multi threading function to upload and download file
-from MyMultiThreading import *
 
 #import loading window
 import WindowLoading as wLd
 
-class TemplateWindow(tk.Toplevel): #tk.Tk):
+class RenameColumnsWindow(tk.Toplevel): #tk.Tk):
   def __init__(self, wn_root, wn_previous):
     super().__init__()
 
     #change icon
-    img = PhotoImage(file=resource_path("M4P_icon.png"))
+    img = PhotoImage(file=resource_path(config.icon))
     self.iconphoto(False, img)
 
     #take the root window
@@ -43,45 +48,35 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
     
     # configure the root window
     self.title('Rename/reorder sample columns')
-    self.geometry('1180x460')
-
-    #fonts
-    self.font_title=('Calibri', 16, 'bold')
-    self.font_up_base = ('Calibri', 12, 'bold')
-    self.font_base = ('Calibri', 12)
-    self.font_subtitle=('Calibri', 10)
-    self.font_button = ('Calibri', 10)
-    self.font_checkbox = ('Calibri', 10)
 
     #Big title
-    self.lbl_bigTitle = tk.Label(self, text='Rename/reorder sample columns',width=50,font=self.font_title)  
+    self.lbl_bigTitle = tk.Label(self, text='Rename/reorder sample columns',width=50,font=config.font_title)  
     self.lbl_bigTitle.grid(row=0, column=0, columnspan=7, padx=6, pady=(20,30))
 
-
     #title label
-    self.lbl_loadGenerator = tk.Label(self, text='Create conversion file',width=25,font=self.font_title)  
+    self.lbl_loadGenerator = tk.Label(self, text='Create conversion file',width=25,font=config.font_title)  
     self.lbl_loadGenerator.grid(row=1, column=0, padx=6, pady=(6,0))
     #decription title label
-    self.lbl_descLoadGenerator = tk.Label(self, text='(skip if already available)',width=25,font=self.font_subtitle)  
+    self.lbl_descLoadGenerator = tk.Label(self, text='(skip if already available)',width=25,font=config.font_description)  
     self.lbl_descLoadGenerator.grid(row=2, column=0, padx=0, pady=(0,20))
     #decription button loadGenerator
-    self.lbl_descLoadGenerator = tk.Label(self, text='A Meta4P output file is required\nto retrieve sample column headers',width=30,font=self.font_subtitle)  
+    self.lbl_descLoadGenerator = tk.Label(self, text='A Meta4P output file is required\nto retrieve sample column headers',width=30,font=config.font_description)  
     self.lbl_descLoadGenerator.grid(row=3, column=0, padx=0, pady=(20,0))
     #Load button
     self.btn_loadGenerator = tk.Button(self, text='Upload file', width=27, command=self.upload_general_file)
     self.btn_loadGenerator.grid(row=4, column=0, padx=5, pady=5)
     #label generate
-    self.lbl_generatorFile = tk.Label(self, text='No file',width=30,font=self.font_base)
+    self.lbl_generatorFile = tk.Label(self, text='No file',width=30,font=config.font_base)
     self.lbl_generatorFile.grid(row=5, column=0, padx=5, pady=5)
     #Done button
-    self.btn_downloadTemplate = tk.Button(self, text='Download conversion file', font=self.font_button, width=27, command=self.download_template)
+    self.btn_downloadTemplate = tk.Button(self, text='Download conversion file', font=config.font_button, width=27, command=self.download_template)
     self.btn_downloadTemplate.grid(row=6, column=0, padx=5, pady=5)
 
     #Only for space
-    self.lbl_space = tk.Label(self, text='',width=25,font=self.font_up_base)
+    self.lbl_space = tk.Label(self, text='',width=25,font=config.font_up_base)
     self.lbl_space.grid(row=7, column=0, padx=5, pady=5)
     #Previous Step button
-    self.btn_previous_step = tk.Button(self, text='🡸 Previous step', width=30, font=self.font_button, command=self.previous_window)
+    self.btn_previous_step = tk.Button(self, text='← Previous step', width=30, font=config.font_button, command=self.previous_window)
     self.btn_previous_step.grid(row=8, column=0, padx=5, pady=5)
 
     #separator    
@@ -89,16 +84,16 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
     sp_1.grid(column=1, row=1, rowspan=6, pady=(25,0), sticky='ns')
 
     #Load Template title label
-    self.lbl_loadTemplate = tk.Label(self, text='Load conversion file',width=25,font=self.font_title)  
+    self.lbl_loadTemplate = tk.Label(self, text='Load conversion file',width=25,font=config.font_title)  
     self.lbl_loadTemplate.grid(row=1, column=2, padx=6, pady=6)
     #decription button loadTemplate
-    self.lbl_descLoadTemplate = tk.Label(self, text='Modified conversion file with\nnew sample column headers\nand/or sample order',width=30,font=self.font_subtitle)  
+    self.lbl_descLoadTemplate = tk.Label(self, text='Modified conversion file with\nnew sample column headers\nand/or sample order',width=30,font=config.font_description)  
     self.lbl_descLoadTemplate.grid(row=3, column=2, padx=0, pady=(20,0))
     #Load Template
-    self.btn_loadTemplate = tk.Button(self, text='Upload file', width=27, font=self.font_button, command=self.upload_template_file)
+    self.btn_loadTemplate = tk.Button(self, text='Upload file', width=27, font=config.font_button, command=self.upload_template_file)
     self.btn_loadTemplate.grid(row=4, column=2, padx=5, pady=5)
     #label template
-    self.lbl_templateFile = tk.Label(self, text='No file',width=30,font=self.font_base)
+    self.lbl_templateFile = tk.Label(self, text='No file',width=30,font=config.font_base)
     self.lbl_templateFile.grid(row=5, column=2, padx=5, pady=5)
 
     #separator    
@@ -106,16 +101,16 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
     sp_2.grid(column=3, row=1, rowspan=6, pady=(25,0), sticky='ns')
 
     #Load File to edit title label
-    self.lbl_loadEditable = tk.Label(self, text='Select file(s) to edit',width=25,font=self.font_title)  
+    self.lbl_loadEditable = tk.Label(self, text='Select file(s) to edit',width=25,font=config.font_title)  
     self.lbl_loadEditable.grid(row=1, column=4, padx=6, pady=6)
     #decription button loadEditable
-    self.lbl_descLoadEditable = tk.Label(self, text='Meta4P outputs with sample\ncolumns to rename/reorder',width=30,font=self.font_subtitle)  
+    self.lbl_descLoadEditable = tk.Label(self, text='Meta4P outputs with sample\ncolumns to rename/reorder',width=30,font=config.font_description)  
     self.lbl_descLoadEditable.grid(row=3, column=4, padx=0, pady=(20,0))
     #Button for Load File to edit
-    self.btn_loadEditable = tk.Button(self, text='Upload file(s)', font=self.font_button, width=27, command=self.upload_editable_file)
+    self.btn_loadEditable = tk.Button(self, text='Upload file(s)', font=config.font_button, width=27, command=self.upload_editable_file)
     self.btn_loadEditable.grid(row=4, column=4, padx=5, pady=5)
     #label template
-    self.lbl_editableFile = tk.Label(self, text='No file',width=30,font=self.font_base)
+    self.lbl_editableFile = tk.Label(self, text='No file',width=30,font=config.font_base)
     self.lbl_editableFile.grid(row=5, column=4, padx=5, pady=5)
 
     #separator    
@@ -124,10 +119,10 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
 
 
     #Rename file(s) title label
-    self.lbl_loadEditable = tk.Label(self, text='Rename/reorder',width=25,font=self.font_title)  
+    self.lbl_loadEditable = tk.Label(self, text='Rename/reorder',width=25,font=config.font_title)  
     self.lbl_loadEditable.grid(row=1, column=6, padx=6, pady=6)
     #Final Done button
-    self.btn_rename = tk.Button(self, text='Rename/reorder sample columns', font=self.font_button, width=27, command=self.download_final)
+    self.btn_rename = tk.Button(self, text='Rename/reorder sample columns', font=config.font_button, width=27, command=self.download_final)
     self.btn_rename.grid(row=4, column=6, padx=5, pady=5)
 
 
@@ -294,15 +289,18 @@ class TemplateWindow(tk.Toplevel): #tk.Tk):
     #check if file is loadid
     if(self.isLoad_df_gn):
       #ask directory to save file
-      file = filedialog.asksaveasfile(parent=self, filetypes=[('EXCEL','.xlsx')], mode='w', defaultextension=".xlsx")
+      file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types, defaultextension=".xlsx")
 
       #check if a file has been chosen
-      if file:
+      if file_path:
+        #save file temporaneous
+        self.file_path = file_path
+
         #show loading windows
         self.winLoad = wLd.LoadingWindow("Downloading file...")
 
         #create thread to download file
-        download_thread = AsyncDownload(self.df_gn, file)
+        download_thread = AsyncDownload(self.df_gn, file_path)
         download_thread.start()
         self.monitor_download_template(download_thread)
       else:

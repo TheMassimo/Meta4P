@@ -1,3 +1,8 @@
+#import config module for environmental variability
+import config
+#import my utility class and function
+import MyUtility
+
 #import threading
 from threading import Thread
 #pandas import
@@ -17,6 +22,8 @@ from tkinter.ttk import Separator, Style
 import io
 import os
 import sys
+import openpyxl
+import csv
 
 # Import Biopython modules to interact with KEGG
 #from Bio import SeqIO
@@ -133,13 +140,12 @@ def manage_kegg_query(self):
     tmp_list = need_df['KEGG_ko'].dropna().unique().tolist()
     #delete everything is not on the list
     self.df_ko = self.df_ko[self.df_ko[0].isin(tmp_list)]
-    #delete everything except what is on the list
-    #self.df_ko = self.df_ko[~self.df_ko[0].isin(tmp_list)]
-    #mangage description text
-    #split elment by ";" and take only the element in position 1
-    self.df_ko[1] = self.df_ko[1].str.split('; ').str[1]
-    #split elment by "[" and take only the element in position 0
-    self.df_ko[1] = self.df_ko[1].str.split(' \[EC').str[0]
+    #edit ko name to remove unuseless information
+    # Rimuovi il carattere ";" e tutto quello che lo precede
+    self.df_ko[1] = self.df_ko[1].str.replace('.*; ', '', regex=True)
+    # Rimuovi il testo "[EC" e quello che lo segue
+    self.df_ko[1] = self.df_ko[1].str.replace(' \[EC.*\]', '', regex=True)
+    
   if( hasattr(self, 'query_pathway') ): #category_to_search['KEGG_Pathway']):
     #preapre df
     self.df_pathway = pd.DataFrame()
@@ -148,13 +154,9 @@ def manage_kegg_query(self):
     #take information about pathway codes from originale df
     need_df = (self.df.assign(KEGG_Pathway=self.df['KEGG_Pathway'].str.split('[,;]')).explode('KEGG_Pathway'))
     tmp_list = need_df['KEGG_Pathway'].dropna().unique().tolist()
-    #split elment by ":" and take only the element in position 1
-    self.df_pathway[0] = self.df_pathway[0].str.split(':').str[1]
     #delete everything is not on the list
     self.df_pathway = self.df_pathway[self.df_pathway[0].isin(tmp_list)]
-    #delete everything except what is on the list
-    #self.df_pathway = self.df_pathway[~self.df_pathway[0].isin(tmp_list)]
-    #mangage code column to future matching with original df data
+
   if( hasattr(self, 'query_module') ): #category_to_search['KEGG_Module']):
     #preapre df
     self.df_module = pd.DataFrame()
@@ -163,13 +165,8 @@ def manage_kegg_query(self):
     #take information about module codes from originale df
     need_df = (self.df.assign(KEGG_Module=self.df['KEGG_Module'].str.split('[,;]')).explode('KEGG_Module'))
     tmp_list = need_df['KEGG_Module'].dropna().unique().tolist()
-    #split elment by ":" and take only the element in position 1
-    self.df_module[0] = self.df_module[0].str.split(':').str[1]
     #delete everything is not on the list
     self.df_module = self.df_module[self.df_module[0].isin(tmp_list)]
-    #delete everything except what is on the list
-    #self.df_module = self.df_module[~self.df_module[0].isin(tmp_list)]
-    #mangage code column to future matching with original df data
   if( hasattr(self, 'query_reaction') ): #category_to_search['KEGG_Reaction']):
     #preapre df
     self.df_reaction = pd.DataFrame()
@@ -178,13 +175,8 @@ def manage_kegg_query(self):
     #take information about reactions codes from originale df
     need_df = (self.df.assign(KEGG_Reaction=self.df['KEGG_Reaction'].str.split('[,;]')).explode('KEGG_Reaction'))
     tmp_list = need_df['KEGG_Reaction'].dropna().unique().tolist()
-    #split elment by ":" and take only the element in position 1
-    self.df_reaction[0] = self.df_reaction[0].str.split(':').str[1]
     #delete everything is not on the list
     self.df_reaction = self.df_reaction[self.df_reaction[0].isin(tmp_list)]
-    #delete everything except what is on the list
-    #self.df_reaction = self.df_reaction[~self.df_reaction[0].isin(tmp_list)]
-    #mangage code column to future matching with original df data
 
 #class to upload file
 class AsyncUpload(Thread):
@@ -198,7 +190,51 @@ class AsyncUpload(Thread):
     self.fileOpen = True
     #open file with pandas
     try:
-      self.df = pd.read_excel(self.filepath)
+      #save file with pandas
+      file_extension = self.filepath.split(".")[-1]
+      if file_extension == "xlsx":
+        self.df = pd.read_excel(self.filepath)
+      else:
+        self.df = pd.read_csv(self.filepath, sep='\t')
+    except Exception as e:
+      #print("===>>" + str(e))
+      self.fileOpen = False
+
+#class to upload file mzTab
+class AsyncUpload_mzTab(Thread):
+  def __init__(self, filepath, headerName, row_name):
+    super().__init__()
+
+    self.filepath = filepath
+    self.headerName = headerName
+    self.row_name = row_name
+
+  def run(self):
+    #variable to check if file will be open
+    self.fileOpen = True
+
+    try:
+      # Apri il file .mzTab
+      with open(self.filepath, 'r') as f:
+          # Inizializza le liste per le righe headerName e row_name
+          ppp_rows = []
+          mmm_rows = []
+
+          # Scorri il file riga per riga
+          for line in f:
+              # Estra le righe che iniziano con headerName e row_name
+              if line.startswith(self.headerName):
+                  ppp_rows.append(line.strip().split('\t'))
+              elif line.startswith(self.row_name):
+                  mmm_rows.append(line.strip().split('\t'))
+
+      #verifico se posso creare il dataframe
+      if(len(ppp_rows) == 0):
+        self.badFile = True
+      else:
+        # Crea il dataframe con i nomi delle colonne
+        self.df = pd.DataFrame(mmm_rows, columns=ppp_rows[0])
+
     except Exception as e:
       #print("===>>" + str(e))
       self.fileOpen = False
@@ -213,21 +249,76 @@ class AsyncUpload_2(Thread):
   def run(self):
     #variable to check if file will be open
     self.fileOpen = True
+
     #open file with pandas
     try:
-      #remove first 2 and last3 row because are not used
-      self.df = pd.read_excel(self.filepath, skiprows=2, skipfooter = 3)
+      #save file with pandas
+      file_extension = self.filepath.split(".")[-1]
+      if file_extension == "xlsx":
+        #open file
+        wb = openpyxl.load_workbook(self.filepath)
+        ws = wb.active
+        #count initial and final '#'
+        count_start = 0
+        count_end = 0
+        #count initial '#'
+        for row in ws.iter_rows():
+          if row[0].value is not None and str(row[0].value).startswith("#"):
+            count_start += 1
+          else:
+            break
+        #count final '#'    
+        for row in reversed(list(ws.iter_rows())):
+          if row[0].value is not None and str(row[0].value).startswith("#"):
+            count_end += 1
+          else:
+            break
+
+        #read removing first and last row that start with '#' because are not used
+        self.df = pd.read_excel(self.filepath, skiprows=count_start, skipfooter = count_end)
+
+      else:
+        # apri il file csv in lettura e crea un reader csv
+        with open(self.filepath, 'r') as csvfile:
+            reader = csv.reader(csvfile, delimiter='\t')
+
+            # inizializza la variabile per l'intestazione
+            header = None
+            found_header = False
+
+            # crea una lista contenente tutte le righe che non iniziano per '#' (tranne '#query' se è l'intestazione)
+            rows = []
+            for row in reader:
+                if row[0].startswith('#query') and not found_header:
+                    header = row
+                    found_header = True
+                elif not row[0].startswith('#'):
+                    rows.append(row)
+
+        # crea un dataframe pandas dal file csv, usando l'intestazione corretta (se trovata) o la prima riga dei dati
+        if header is not None:
+            self.df = pd.DataFrame(rows, columns=header)
+
+            # Estrae il nome completo delle colonne che iniziano con '#query'
+            query_columns = self.df.filter(regex='#query').columns
+            query_columns_names = [col for col in query_columns]
+            #rename the column
+            if(len(query_columns_names) == 1):
+              self.df = self.df.rename(columns={query_columns_names[0]: 'query'})
+        else:
+            self.df = pd.DataFrame(rows[1:], columns=rows[0])
+
     except Exception as e:
       #print("===>>" + str(e))
       self.fileOpen = False
 
 #class to download file
 class AsyncDownload(Thread):
-  def __init__(self, df_tmp, file):
+  def __init__(self, df_tmp, file_path):
     super().__init__()
 
     self.df_tmp = df_tmp
-    self.file = file
+    self.file_path = file_path
 
   def run(self):
     #variable to check if file will be saved
@@ -235,14 +326,20 @@ class AsyncDownload(Thread):
     #open file with pandas
     try:
       #save file with pandas
-      self.df_tmp.to_excel(self.file.name, index=False)
+      file_extension = self.file_path.split(".")[-1]
+      #file_path_without_extension, file_extension = self.file.name.rsplit(".", 1)
+      if file_extension == "xlsx":
+        self.df_tmp.to_excel(self.file_path, index=False)
+      else:
+        self.df_tmp.to_csv(self.file_path, sep='\t', index=False, header=True,)
+           
     except Exception as e:
       #print("===>>" + str(e))
       self.fileSaved = False
 
 #class to download aggregation files
 class AsyncDownload_Aggregation(Thread):
-  def __init__(self, df, my_list, params, file_direcotory):
+  def __init__(self, df, my_list, params, file_path):
     super().__init__()
 
     #save the df recived
@@ -251,8 +348,11 @@ class AsyncDownload_Aggregation(Thread):
     self.my_list = my_list
     #params to work
     self.params = params
-    #save file_direcotory
-    self.file_direcotory = file_direcotory
+    #save file_path
+    self.file_path = file_path
+    #variable to know if user want replace all existing file with the same path
+    #2=to ask;  1=positive answer;  0=negative answer
+    self.replaceAll = 2;
 
   def run(self):
     #variable to check if file will be saved
@@ -320,12 +420,12 @@ class AsyncDownload_Aggregation(Thread):
       df_tmp = df_tmp.replace('', np.nan)
 
       #prepare filename to save file
-      file_path = self.file_direcotory+"/"
+      final_path = ""
 
       #create a tmp df for supplementary tables
       df_tmp_sup = df_tmp.copy()
       #prepare filename to save supplementary tables
-      file_path_sup = self.file_direcotory+"/"
+      final_path_sup = ""
 
       #check if there are 1 or 2 name
       if(len(element) == 1):
@@ -354,14 +454,14 @@ class AsyncDownload_Aggregation(Thread):
             .groupby('new_col', as_index=False)
             .count())
 
-          #edit file_path_sup
+          #edit final_path_sup
           exstension = ""
           col_count = ""
-          if(self.params["mode"] == "proteins"):
-            exstension = "-proteins"
+          if(self.params["mode"] == "Proteins"):
+            exstension = "-protcounts"
             col_count = "Total protein count"
-          elif( (self.params["mode"] == 'peptide') or (self.params["mode"] == 'psms') ):
-            exstension = "-peptides"
+          elif( (self.params["mode"] == 'Peptides') or (self.params["mode"] == 'PSMs') ):
+            exstension = "-peptcounts"
             col_count = "Total peptide count"
           else:
             exstension = "-count"
@@ -375,8 +475,8 @@ class AsyncDownload_Aggregation(Thread):
           df_tmp_sup = df_tmp_sup.replace('', np.nan)
           df_tmp_sup = df_tmp_sup.dropna(subset=[col_name])
 
-          #edit file_path_sup
-          file_path_sup = file_path_sup + col_name + exstension + ".xlsx"
+          #edit final_path_sup
+          final_path_sup = self.params["prefix"] + col_name + exstension + self.params["suffix"]
 
         #drop unuseless row
         df_tmp = df_tmp.dropna(subset=[col_name])
@@ -397,8 +497,8 @@ class AsyncDownload_Aggregation(Thread):
         df_tmp = df_tmp.replace('', np.nan)
         df_tmp = df_tmp.dropna(subset=[col_name])
 
-        #edit file_path
-        file_path = file_path + col_name + ".xlsx"
+        #edit final_path
+        final_path = self.params["prefix"] + col_name + self.params["suffix"]
 
         ## for df_tmp and df_tmp_sup ##
         #add extra column with description of kegg name
@@ -485,14 +585,14 @@ class AsyncDownload_Aggregation(Thread):
             .groupby([col_name_1, 'new_col'], as_index=False)
             .count())
 
-          #edit file_path_sup
+          #edit final_path_sup
           exstension = ""
           col_count = ""
-          if(self.params["mode"] == "proteins"):
-            exstension = "-proteins"
+          if(self.params["mode"] == "Proteins"):
+            exstension = "-protcounts"
             col_count = "Total protein count"
-          elif( (self.params["mode"] == 'peptide') or (self.params["mode"] == 'psms') ):
-            exstension = "-peptides"
+          elif( (self.params["mode"] == 'Peptides') or (self.params["mode"] == 'PSMs') ):
+            exstension = "-peptcounts"
             col_count = "Total peptide count"
           else:
             exstension = "-count"
@@ -506,8 +606,8 @@ class AsyncDownload_Aggregation(Thread):
           df_tmp_sup = df_tmp_sup.replace('', np.nan)
           df_tmp_sup = df_tmp_sup.dropna(subset=[col_name_1, col_name_2])
 
-          #edit file_path_sup
-          file_path_sup = file_path_sup + col_name_1 + "+" + col_name_2 + exstension + ".xlsx"
+          #edit final_path_sup
+          final_path_sup = self.params["prefix"] + col_name_1 + "+" + col_name_2 + exstension + self.params["suffix"]
     
         #drop unuseless row
         df_tmp = df_tmp.dropna(subset=[col_name_1, col_name_2])
@@ -585,8 +685,8 @@ class AsyncDownload_Aggregation(Thread):
           if(self.params["sup_tab"]):
             df_tmp_sup.insert(loc=position_to_insert, column="Reaction name", value=df_tmp["Reaction name"])
 
-        #edit file_path
-        file_path = file_path + col_name_1 + "+" + col_name_2 + ".xlsx"
+        #edit final_path
+        final_path = self.params["prefix"] + col_name_1 + "+" + col_name_2 + self.params["suffix"]
 
       #control to put zero in empty cells 
       if(self.params['fill0'] == 1):
@@ -597,10 +697,37 @@ class AsyncDownload_Aggregation(Thread):
           df_tmp_sup[sub_set] = df_tmp_sup[sub_set].fillna(0)
 
       try:
-        #save the file
-        df_tmp.to_excel(file_path, index=False)
-        if(self.params["sup_tab"]):
-          df_tmp_sup.to_excel(file_path_sup, index=False)
+        #creating final path
+        # separa il percorso in base alle barre
+        path_list = self.file_path.split("/")
+        # separa l'ultima parte del percorso in base al punto
+        file_name, file_extension = path_list[-1].rsplit(".", 1)
+        # sostituisci la parte compresa tra l'ultimo "/" e l'ultimo "." con la nuova stringa
+        final_path = "/".join(path_list[:-1] + [final_path + "." + file_extension])
+        # sostituisci la parte compresa tra l'ultimo "/" e l'ultimo "." con la nuova stringa
+        final_path_sup = "/".join(path_list[:-1] + [final_path_sup + "." + file_extension])
+
+        #check if path already exist
+        alreadyExists = os.path.exists(final_path) or (os.path.exists(final_path_sup) and self.params["sup_tab"])
+        if(self.replaceAll == 2):
+          if( alreadyExists ):
+            msg_box = tk.messagebox.askquestion('Replace or ignore file', 'Some files with the same name already exist in the destination folder.\nReplace them?', icon='warning')
+            if msg_box == 'yes':
+              self.replaceAll = 1
+            else:
+              self.replaceAll = 0
+
+        if((self.replaceAll > 0) or (not alreadyExists)):
+          #file_path_without_extension, file_extension = self.file.name.rsplit(".", 1)
+          if file_extension == "xlsx":
+            #save the file
+            df_tmp.to_excel(final_path, index=False)
+            if(self.params["sup_tab"]):
+              df_tmp_sup.to_excel(final_path_sup, index=False)
+          else:
+            df_tmp.to_csv(final_path, sep='\t', index=False)
+            if(self.params["sup_tab"]):
+              df_tmp_sup.to_csv(final_path_sup, sep='\t', index=False)
       except Exception as e:
         #print("===>>" + str(e))
         self.fileSaved = False
@@ -629,11 +756,19 @@ class AsyncRenameFile(Thread):
     #iterate for every path
     for filepath in self.list_file:
       #open file
-      df = pd.read_excel(filepath)
+      file_extension = filepath.split(".")[-1]
+      try:
+        if file_extension == "xlsx":
+          df = pd.read_excel(filepath)
+        else:
+          df = pd.read_csv(filepath, sep='\t')
+      except Exception as e:
+        #print("===>>" + str(e))
+        self.fileSaved = False
 
       #take the old list of "F*" value in order
       cols_len = len(list(df.filter(regex=r'F\d+')))
-
+      
       #check lenght
       if( cols_len == len_template ):
 
@@ -654,8 +789,11 @@ class AsyncRenameFile(Thread):
 
         #check to save file  
         try:
-          #save new file in the same start place
-          df.to_excel(filepath, index=False)
+          #file_path_without_extension, file_extension = self.file.name.rsplit(".", 1)
+          if file_extension == "xlsx":
+            df.to_excel(filepath, index=False)
+          else:
+            df.to_csv(filepath, sep='\t', index=False, header=True,)
         except Exception as e:
           #print("===>>" + str(e))
           self.fileSaved = False
@@ -663,7 +801,8 @@ class AsyncRenameFile(Thread):
         self.correctLen = False
       
 #class to manage file on protein window
-class ManageProtein(Thread):
+#changing the order of the controls inside the function can break the correct functioning##
+class ManageData(Thread):
   def __init__(self, window):
     super().__init__()
 
@@ -676,281 +815,400 @@ class ManageProtein(Thread):
     #create a copy for finale edits
     df_final = window.df.copy()
 
-    #control for Protein FDR
-    if(window.var_chc_low.get() == 0 ):
-      df_final.drop(df_final.index[df_final['Protein FDR Confidence: Combined'] == 'Low'], inplace=True)
-    if(window.var_chc_medium.get() == 0 ):
-      df_final.drop(df_final.index[df_final['Protein FDR Confidence: Combined'] == 'Medium'], inplace=True)
-    if(window.var_chc_high.get() == 0 ):
-      df_final.drop(df_final.index[df_final['Protein FDR Confidence: Combined'] == 'High'], inplace=True)
+    #function for concatenate values
+    def join_unique(x):
+      if len(set(x)) == 1:
+          return x.iloc[0]
+      else:
+          return '; '.join(set(x))
 
-    #For description
-    #get content of description listbox
-    get_content = window.dsc_listbox.get(0, END)
-    #make list for remove row
-    toSearch = []
-    for con_item in get_content:
-      toSearch.append(con_item)
-    #delete rows that do not contain any words in the column
-    if(window.rdb_var.get()=='or'):
-      df_final = df_final[df_final["Description"].str.contains('|'.join(toSearch)) == True]
-    elif(window.rdb_var.get()=='and'):
-      base = r'^{}'
-      expr = '(?=.*{})'
-      toSearch = base.format(''.join(expr.format(w) for w in toSearch))
-      df_final = df_final[df_final["Description"].str.contains(toSearch) == True]
-    #finally edit the cells for remove "newline"(\n) and put ";"
-    df_final['Description'] = df_final['Description'].str.replace("\n","; ")
+    #Solve problem with row that contains the same sequence value
+    if( (MyUtility.workDict["input_type"] == 'mzTab') and (MyUtility.workDict["mode"] == 'Peptides') ):
+      #take the aboundance sub set
+      sub_set = list(df_final.filter(regex=r'Abundance F\d+'))
+      #create a list with a column list that need to be equal in first phase
+      column_list = ['Sequence']+sub_set
+
+      #PHASE_1# Group by if all columns in column_list are equal and join the different Accession
+      df_final = df_final.groupby(column_list).agg({'Master Protein Accessions': join_unique}).reset_index()
+      
+      #PHASE2# Sum row whit same Sequence
+      agg_dict = {name: 'sum' for name in sub_set}
+      df_final = df_final.groupby('Sequence').agg({**agg_dict, **{col: 'first' for col in df_final.columns if col not in agg_dict}}).set_index('Sequence')
+      df_final = df_final.reset_index()
+
+      #put Accession in second coulumn
+      all_cols = list(df_final.columns)
+      all_cols.insert(1, all_cols.pop(all_cols.index('Master Protein Accessions')))
+      df_final = df_final.reindex(columns=all_cols)
+
+    #control for Protein FDR (Confidence)
+    if( hasattr(window, 'frame_confidence') and (window.frame_confidence.grid_info() != {}) ):
+      if(MyUtility.workDict['mode'] == 'Proteins'):
+        condidence_column_name = 'Protein FDR Confidence: Combined'
+      else:
+        condidence_column_name = 'Confidence'
+      if(window.var_chc_low.get() == 0 ):
+        df_final.drop(df_final.index[df_final[condidence_column_name] == 'Low'], inplace=True)
+      if(window.var_chc_medium.get() == 0 ):
+        df_final.drop(df_final.index[df_final[condidence_column_name] == 'Medium'], inplace=True)
+      if(window.var_chc_high.get() == 0 ):
+        df_final.drop(df_final.index[df_final[condidence_column_name] == 'High'], inplace=True)
     
-    #control for marked as
-    i = 0
-    for marked in window.chcs_marked:
-      if(window.var_chcs_marked[i].get() == 0):
-        #print(marked.cget("text"))
-        df_final.drop(df_final.index[df_final['Marked as'] == marked.cget("text")], inplace=True)
-      i = i+1
+    #control for normalized
+    if( hasattr(window, 'chc_normalized') and (window.chc_normalized.grid_info() != {}) ):
+      if(window.var_chc_normalized.get() == 1):
+        df_final.drop(list(df_final.filter(regex = 'Abundance:')), axis = 1, inplace = True)
+      else:
+        df_final.drop(list(df_final.filter(regex = 'Normalized')), axis = 1, inplace = True)
 
-    #control for master protein
-    if(window.var_chc_master.get() == 1):
-      df_final.drop(df_final.index[df_final['Master'] != 'Master Protein'], inplace=True)
+    #After normalized control rename columns name
+    if(MyUtility.workDict["input_type"] == 'proteome'):
+      def rename_columns(col):
+        if col.startswith('Abundances (Normalized): F'):
+            new_col = f"Abundance {col.split(' ')[2]}"
+            new_col = new_col[:-1]
+        elif col.startswith('Abundance: F'):
+            new_col = f"Abundance {col.split(' ')[1]}"
+            new_col = new_col[:-1]
+        else:
+            new_col = col
+        return new_col
 
-    #get abundace colums
+      df_final = df_final.rename(columns=lambda col: rename_columns(col))
+
+    #Control for description
+    if( hasattr(window, 'frame_description') and (window.frame_description.grid_info() != {}) ):
+      #find the correct name for the filtre
+      if(MyUtility.workDict["mode"] == 'Proteins'):
+        description_name = 'Description'
+      else:
+        description_name = 'Master Protein Descriptions'
+
+      #get content of description listbox
+      get_content = window.dsc_listbox.get(0, END)
+      #make list for remove row
+      toSearch = []
+      for con_item in get_content:
+        toSearch.append(con_item)
+      #delete rows that do not contain any words in the column
+      if(window.rdb_var.get()=='or'):
+        df_final = df_final[df_final[description_name].str.contains('|'.join(toSearch)) == True]
+      elif(window.rdb_var.get()=='and'):
+        base = r'^{}'
+        expr = '(?=.*{})'
+        toSearch = base.format(''.join(expr.format(w) for w in toSearch))
+        df_final = df_final[df_final[description_name].str.contains(toSearch) == True]
+      #finally edit the cells for remove "newline"(\n) and put ";"
+      df_final[description_name] = df_final[description_name].str.replace("\n","; ")
+    
+    #control for Master Protein
+    if( hasattr(window, 'chc_master')):
+      if(window.var_chc_master.get() == 1):
+        df_final.drop(df_final.index[df_final['Master'] != 'Master Protein'], inplace=True)
+    
+    #control for Protein Accessions
+    if( hasattr(window, 'chc_ptrAccessions')):
+      if(window.var_chc_ptrAccessions.get() == 0):
+        df_final.drop(['Protein Accessions'], inplace=True, axis=1, errors='ignore')
+    
+    #control for marked as (Marker)
+    if( hasattr(window, 'frame_marker') and (window.frame_marker.grid_info() != {}) ):
+      if('Marked as' in df_final.columns):
+        i = 0
+        for marked in window.scl_check_marker.chcs:
+          if(window.scl_check_marker.var_chcs[i].get() == 0):
+            if(marked.cget("text") == "Empty"):
+              df_final = df_final.dropna(subset=['Marked as'])
+            else:
+              #print(marked.cget("text"))
+              df_final.drop(df_final.index[df_final['Marked as'] == marked.cget("text")], inplace=True)
+          i = i+1
+    
+    #control for Quan Info
+    if( hasattr(window, 'frame_quanInfo') and (window.frame_quanInfo.grid_info() != {}) ):
+      i = 0
+      for quan in window.scl_check_quantInfo.chcs:
+        if(window.scl_check_quantInfo.var_chcs[i].get() == 0):
+          df_final.drop(df_final.index[df_final['Quan Info'] == quan.cget("text")], inplace=True)
+        i = i+1
+
+      #get abundace colums
+      sub_set = list(df_final.filter(regex=r'F\d+'))
+    
+    #Control only for peptide on Protoemoe Discovery
+    if( (MyUtility.workDict["input_type"] == 'proteome') and (MyUtility.workDict["mode"] == 'Peptides') ):
+      #remove duplicate Sequence (cause of Protoeme Discovery bug)
+      #create a list for Abundance cols
+      abn_list = list(df_final.filter(regex=r'F\d+'))
+      #create a list for all cols
+      c_list = list(df_final.columns)
+      #remove Sequence (because used for groupby)
+      c_list.remove('Sequence')
+      #remove all Abundance (because used for sum)
+      c_list = [i for i in c_list if i not in abn_list]
+      #aggregate by sequence and sum Abundance
+      df_final = df_final.groupby('Sequence').agg({**dict.fromkeys(c_list, 'first'), **dict.fromkeys(abn_list, 'sum') }).reset_index()
+      #re-swap "Sequence"(first columns) and "Confidence"(second columns)
+      # get a list of the columns
+      col_list = list(df_final)
+      # use this handy way to swap the elements
+      col_list[0], col_list[1] = col_list[1], col_list[0]
+      # assign back, the order will now be swapped
+      df_final = df_final[col_list]
+      #re put nan in empty cells
+      df_final[abn_list] = df_final[abn_list].replace({0:np.nan})
+    
+    #create abundace colums after drop some
     sub_set = list(df_final.filter(regex=r'F\d+'))
+
+    #if we are on mzTab, convert string in integer for abundance
+    if(MyUtility.workDict["input_type"] == 'mzTab' ):
+      df_final[sub_set] = df_final[sub_set].apply(pd.to_numeric, errors='coerce')
 
     #control for abundance
-    num_abundance = 0
-    if(window.opt_abundance_var.get() == 'Absolute'):
-      num_abundance = int(window.ntr_abundance.get())
-    elif(window.opt_abundance_var.get() == 'Percentage'):
-      #get number of columns
-      num_cols = len(sub_set)
-      #calcolate num
-      num_abundance = window.proper_round((int(window.ntr_abundance.get()) * num_cols)/100)
-    #delete all row width 'num_cols' empty in Aboundance(F1,F2..) columns
-    df_final = df_final.dropna(subset=sub_set, thresh=num_abundance)
-
-    #control for normalized
-    if(window.var_chc_normalized.get() == 1):
-      df_final.drop(list(df_final.filter(regex = 'Abundance:')), axis = 1, inplace = True)
-    else:
-      df_final.drop(list(df_final.filter(regex = 'Normalized')), axis = 1, inplace = True)
-
-    #recreate abundace colums after drop some
-    sub_set = list(df_final.filter(regex=r'F\d+'))
-
-    #control for Re-Normalized
-    if(window.var_chc_re_normalized.get() == 1):
-      #RE-Normalize all colums
-      for col_name in sub_set:
-        df_final[col_name] = ( df_final[col_name]/df_final[col_name].sum() ) * 10000000000
-
-    #control to put zero in empty cells
-    if(window.var_chc_fill_zero.get() == 1):
-      df_final[sub_set] = df_final[sub_set].fillna(0)
-
-    #save edit df in tmp variable
-    window.df_tmp = df_final
-
-#class to manage file on peptide window
-class ManagePeptide(Thread):
-  def __init__(self, window):
-    super().__init__()
-
-    #take window data
-    self.window = window
-
-  def run(self):
-    #take a copy of window to do controls
-    window = self.window
-    #create a copy for finale edits
-    df_final = window.df.copy()
-
-    #control for Protein FDR
-    if(window.var_chc_low.get()==0 ):
-      df_final.drop(df_final.index[df_final['Confidence'] == 'Low'], inplace=True)   
-    if(window.var_chc_medium.get() == 0 ):
-      df_final.drop(df_final.index[df_final['Confidence'] == 'Medium'], inplace=True)    
-    if(window.var_chc_high.get() == 0 ):
-      df_final.drop(df_final.index[df_final['Confidence'] == 'High'], inplace=True)
-
-    #control for normalized
-    if(window.var_chc_normalized.get() == 1):
-      df_final.drop(list(df_final.filter(regex = 'Abundance:')), axis = 1, inplace = True)
-    else:
-      df_final.drop(list(df_final.filter(regex = 'Normalized')), axis = 1, inplace = True)
-
-    #For Master Proterin Descriptions
-    #make list for remove row
-    toSearch = []
-    for label in window.lbls_description:
-      toSearch.append(label.cget("text"))
-    #delete rows that do not contain any words in the column
-    if(window.rdb_var.get()=='or'):
-      df_final = df_final[df_final["Master Protein Descriptions"].str.contains('|'.join(toSearch)) == True]
-    elif(window.rdb_var.get()=='and'):
-      base = r'^{}'
-      expr = '(?=.*{})'
-      toSearch = base.format(''.join(expr.format(w) for w in toSearch))
-      df_final = df_final[df_final["Master Protein Descriptions"].str.contains(toSearch) == True]
-    #finally edit the cells for remove "newline"(\n) and put ";"
-    df_final['Master Protein Descriptions'] = df_final['Master Protein Descriptions'].str.replace("\n","; ")
-
-    #control for Protein Accessions
-    if(window.var_chc_ptrAccessions.get() == 0):
-      df_final.drop(['Protein Accessions'], inplace=True, axis=1, errors='ignore')
-
-    #control for marked as
-    i = 0
-    for marked in window.chcs_marked:
-      if(window.var_chcs_marked[i].get() == 0):
-        df_final.drop(df_final.index[df_final['Marked as'] == marked.cget("text")], inplace=True)
-      i = i+1
-
-    #control for Quan Info
-    i = 0
-    for quan in window.chcs_quant:
-      if(window.var_chcs_quant[i].get() == 0):
-        df_final.drop(df_final.index[df_final['Quan Info'] == quan.cget("text")], inplace=True)
-      i = i+1
-
-    #get abundace colums
-    sub_set = list(df_final.filter(regex=r'F\d+'))
-
-    #recreate abundace colums after drop some
-    sub_set = list(df_final.filter(regex=r'F\d+'))
-
-    #control for Re-Normalized
-    if(window.var_chc_re_normalized.get() == 1):
-      #RE-Normalize all colums
-      for col_name in sub_set:
-        df_final[col_name] = ( df_final[col_name]/df_final[col_name].sum() ) * 10000000000
-
-    #remove duplicate Sequence (cause of Protoeme Discovery bug)
-    #create a list for Abundance cols
-    abn_list = list(df_final.filter(regex=r'F\d+'))
-    #create a list for all cols
-    c_list = list(df_final.columns)
-    #remove Sequence (because used for groupby)
-    c_list.remove('Sequence')
-    #remove all Abundance (because used for sum)
-    c_list = [i for i in c_list if i not in abn_list]
-    #aggregate by sequence and sum Abundance
-    df_final = df_final.groupby('Sequence').agg({**dict.fromkeys(c_list, 'first'), **dict.fromkeys(abn_list, 'sum') }).reset_index()
-    #re-swap "Sequence"(first columns) and "Confidence"(second columns)
-    # get a list of the columns
-    col_list = list(df_final)
-    # use this handy way to swap the elements
-    col_list[0], col_list[1] = col_list[1], col_list[0]
-    # assign back, the order will now be swapped
-    df_final = df_final[col_list]
-    #re put nan in empty cells
-    df_final[abn_list] = df_final[abn_list].replace({0:np.nan})
-
-    #control for abundance (valid values)
-    num_abundance = 0
-    if(window.opt_abundance_var.get() == 'Absolute'):
-      num_abundance = int(window.ntr_abundance.get())
-    elif(window.opt_abundance_var.get() == 'Percentage'):
-      #get abundace colums
-      sub_set = list(df_final.filter(regex=r'F\d+'))
-      #get number of columns
-      num_cols = len(sub_set)
-      #calcolate num
-      num_abundance = window.proper_round((int(window.ntr_abundance.get()) * num_cols)/100)
-    #delete all row width 'num_cols' empty in Aboundance(F1,F2..) columns
-    df_final = df_final.dropna(subset=sub_set, thresh=num_abundance)
-
-    #control to put zero in empty cells
-    if(window.var_chc_fill_zero.get() == 1):
-      df_final[sub_set] = df_final[sub_set].fillna(0)
-
-    #save edit df in tmp variable
-    window.df_tmp = df_final
-
-#class to manage file on PSMs window
-class ManagePSMs(Thread):
-  def __init__(self, window):
-    super().__init__()
-
-    #take window data
-    self.window = window
-
-  def run(self):
-    #take a copy of window to do controls
-    window = self.window
-    #create a copy for finale edits
-    df_final = window.df.copy()
-
-    #control for Protein FDR
-    if(window.var_chc_low.get()==0 ):
-      df_final.drop(df_final.index[df_final['Confidence'] == 'Low'], inplace=True)   
-    if(window.var_chc_medium.get() == 0 ):
-      df_final.drop(df_final.index[df_final['Confidence'] == 'Medium'], inplace=True)    
-    if(window.var_chc_high.get() == 0 ):
-      df_final.drop(df_final.index[df_final['Confidence'] == 'High'], inplace=True)
-
-    #For Master Proterin Descriptions
-    #make list for remove row
-    toSearch = []
-    for label in window.lbls_description:
-      toSearch.append(label.cget("text"))
-    #delete rows that do not contain any words in the column
-    if(window.rdb_var.get()=='or'):
-      df_final = df_final[df_final["Master Protein Descriptions"].str.contains('|'.join(toSearch)) == True]
-    elif(window.rdb_var.get()=='and'):
-      base = r'^{}'
-      expr = '(?=.*{})'
-      toSearch = base.format(''.join(expr.format(w) for w in toSearch))
-      df_final = df_final[df_final["Master Protein Descriptions"].str.contains(toSearch) == True]
-    #finally edit the cells for remove "newline"(\n) and put ";"
-    df_final['Master Protein Descriptions'] = df_final['Master Protein Descriptions'].str.replace("\n","; ")
-
-    #control for marked as
-    i = 0
-    for marked in window.chcs_marked:
-      if(window.var_chcs_marked[i].get() == 0):
-        df_final.drop(df_final.index[df_final['Marked as'] == marked.cget("text")], inplace=True)
-      i = i+1
-
-    #prepare pivot table
-    table = pd.pivot_table(data=df_final,
-                           index=['Sequence'],
-                           columns=['File ID'],
-                           aggfunc='size')
-                           #fill_value=0) if I want fill Nan with 0
+    if( hasattr(window, 'frame_validValues') and (window.frame_validValues.grid_info() != {}) ):
+      num_abundance = 0
+      if(window.opt_abundance_var.get() == 'Absolute'):
+        num_abundance = int(window.ntr_abundance.get())
+      elif(window.opt_abundance_var.get() == 'Percentage'):
+        #get number of columns
+        num_cols = len(sub_set)
+        #calcolate num
+        num_abundance = window.proper_round((int(window.ntr_abundance.get()) * num_cols)/100)
+      #delete all row width 'num_cols' empty in Aboundance(F1,F2..) columns
+      df_final = df_final.dropna(subset=sub_set, thresh=num_abundance)
     
-    #table.columns = table.columns.droplevel(0) #remove first line
-    table.columns.name = None               #File id
-    table = table.reset_index()                #index to columns
+    #recreate abundace colums after drop some
+    sub_set = list(df_final.filter(regex=r'F\d+'))
 
-    #marge original file with table
-    df_final = df_final.merge(table, left_on='Sequence', right_on='Sequence', how='left')
+    #control for Re-Normalized
+    if( hasattr(window, 'chc_re_normalized')  and (window.chc_re_normalized.grid_info() != {}) ):
+      if(window.var_chc_re_normalized.get() == 1):
+        #RE-Normalize all colums
+        for col_name in sub_set:
+          df_final[col_name] = ( df_final[col_name]/df_final[col_name].sum() ) * 10000000000
 
-    #remove duplicate
-    df_final = df_final.drop_duplicates(subset='Sequence', keep="last")
+    #Control only for PSMs on Protoemoe Discovery
+    if( (MyUtility.workDict["input_type"] == 'proteome') and (MyUtility.workDict["mode"] == 'PSMs') ):
+      #prepare pivot table
+      table = pd.pivot_table(data=df_final,
+                             index=['Sequence'],
+                             columns=['File ID'],
+                             aggfunc='size')
+                             #fill_value=0) if I want fill Nan with 0
+      
+      #table.columns = table.columns.droplevel(0) #remove first line
+      table.columns.name = None               #File id
+      table = table.reset_index()                #index to columns
 
-    #remove "File ID" column
-    df_final.drop(['File ID'], inplace=True, axis=1, errors='ignore')
+      #marge original file with table
+      df_final = df_final.merge(table, left_on='Sequence', right_on='Sequence', how='left')
 
-    #reorder F columns
-    num = df_final.columns.str.extract('F(\d+)', expand=False).astype(float)
-    cols = df_final.columns.to_numpy(copy=True)
-    m = num.notna()
-    order = np.argsort(num[m])
-    cols[m] = cols[m][order]
-    df_final = df_final[cols]
+      #remove duplicate
+      df_final = df_final.drop_duplicates(subset='Sequence', keep="last")
 
+      #remove "File ID" column
+      df_final.drop(['File ID'], inplace=True, axis=1, errors='ignore')
 
-    #df.loc[df['temp']==0, 'temp'] = np.nan
-    #control to put zero in empty cells 
-    if(window.var_chc_fill_zero.get() == 1):
-      #get abundace colums
-      sub_set = list(df_final.filter(regex=r'F\d+'))
-      df_final[sub_set] = df_final[sub_set].fillna(0)
+      #reorder F columns
+      num = df_final.columns.str.extract('F(\d+)', expand=False).astype(float)
+      cols = df_final.columns.to_numpy(copy=True)
+      m = num.notna()
+      order = np.argsort(num[m])
+      cols[m] = cols[m][order]
+      df_final = df_final[cols]
+      
+    #Control only for PSMs on mzTab
+    if( (MyUtility.workDict["input_type"] == 'mzTab') and (MyUtility.workDict["mode"] == 'PSMs') ):
+      #PHASE_1# Group by if all columns in column_list are equal and join the different Accession
+      df_final = df_final.groupby('PSM_ID').agg({'Master Protein Accessions': join_unique, **{col: 'first' for col in df_final.columns if col not in ['PSM_ID','Master Protein Accessions']} }).reset_index()
+
+      #remove unuse part of file
+      df_final['Spectra_ref'] = 'F' + df_final['Spectra_ref'].str.extract(r'\[(\d+)\]')
+    
+      #prepare pivot table
+      table = pd.pivot_table(data=df_final,
+                             index=['Sequence'],
+                             columns=['Spectra_ref'],
+                             aggfunc='size')
+                             #fill_value=0) if I want fill Nan with 0
+      
+      #table.columns = table.columns.droplevel(0) #remove first line
+      table.columns.name = None               #File id
+      table = table.reset_index()                #index to columns
+
+      #marge original file with table
+      df_final = df_final.merge(table, left_on='Sequence', right_on='Sequence', how='left')
+
+      #remove duplicate
+      df_final = df_final.drop_duplicates(subset='Sequence', keep="last")
+
+      #remove "Spectra_ref"
+      df_final.drop(['Spectra_ref'], inplace=True, axis=1, errors='ignore')
+      #remove "File ID" column
+      df_final.drop(['PSM_ID'], inplace=True, axis=1, errors='ignore')
+
+      #reorder F columns
+      num = df_final.columns.str.extract('F(\d+)', expand=False).astype(float)
+      cols = df_final.columns.to_numpy(copy=True)
+      m = num.notna()
+      order = np.argsort(num[m])
+      cols[m] = cols[m][order]
+      df_final = df_final[cols]
+
+      #show at first Sequence and at second Master Protein Accessions
+      #extract columns from dataframe
+      sequence_col = df_final.pop('Sequence')
+      master_col = df_final.pop('Master Protein Accessions')
+      #insert columns in correct order
+      df_final.insert(0, 'Sequence', sequence_col)
+      df_final.insert(1, 'Master Protein Accessions', master_col)
+      
+    #control to put zero in empty cells
+    if( hasattr(window, 'chc_fill_zero') and (window.chc_fill_zero.grid_info() != {}) ):
+      if(window.var_chc_fill_zero.get() == 1):
+        df_final[sub_set] = df_final[sub_set].fillna(0)
+    
+    #Final Reorder
+    if( (MyUtility.workDict["input_type"] == 'proteome') or (MyUtility.workDict["input_type"] == 'mzTab') ):
+      if(MyUtility.workDict["mode"] == 'Proteins'):
+        #before save, reorder file according to "Accession" column
+        df_final = df_final.sort_values('Accession')
+      elif(MyUtility.workDict["mode"] == 'Peptides'):
+        #before save, reorder file according to "Sequence" column
+        df_final = df_final.sort_values('Sequence')
+      elif(MyUtility.workDict["mode"] == 'PSMs'):
+        #before save, reorder file according to "Sequence" column
+        df_final = df_final.sort_values('Sequence')
+
 
     #save edit df in tmp variable
     window.df_tmp = df_final
 
+class ManageDataDynamic(Thread):
+  def __init__(self, window):
+    super().__init__()
+
+    #take window data
+    self.window = window
+
+  def run(self):
+    #take a copy of window to do controls
+    window = self.window
+    #create a copy for finale edits
+    df_final = window.df.copy()
+
+    #Control for rename columns
+    #Protein Acession
+    if( hasattr(window, 'frame_proteinAccession') ):
+      old_name = window.proteinAccession_listbox.get(0, tk.END)[0]
+      # Rinominiamo la colonna
+      if(MyUtility.workDict['mode'] == 'Proteins'):
+        df_final = df_final.rename(columns={old_name: 'Accession'})
+      else:
+        df_final = df_final.rename(columns={old_name: 'Master Protein Accessions'})
+    #Peptide Sequence
+    if( hasattr(window, 'frame_peptideSequence') ):
+      old_name = window.peptideSequence_listbox.get(0, tk.END)[0]
+      # Rinominiamo la colonna
+      df_final = df_final.rename(columns={old_name: 'Sequence'})
+    #Sample ID
+    if(hasattr(window, 'frame_sampleID')):
+      old_name = window.sampleID_listbox.get(0, tk.END)[0]
+      df_final = df_final.rename(columns={old_name: 'File ID'})
+    #Abundance
+    if(hasattr(window, 'frame_abundanceValue')):
+      for index in range(window.abundanceValue_listbox.size()):
+        old_name = window.abundanceValue_listbox.get(index)
+        new_name = 'Abundance F'+str(index+1) #put index+1 because we want count starting from 1 and not 0
+        df_final = df_final.rename(columns={old_name: new_name})
+
+    #Remove useless columns
+    #get list of unused colums
+    useless_column = window.all_columns_listbox.get(0, tk.END)
+    existing_columns = [col for col in useless_column if col in df_final.columns]
+    df_final = df_final.drop(existing_columns, axis=1)
+
+    #create abundace colums after drop some
+    sub_set = list(df_final.filter(regex=r'F\d+'))
+
+    #Convert string in integer for abundance
+    df_final[sub_set] = df_final[sub_set].apply(pd.to_numeric, errors='coerce')
+
+    #control for abundance
+    if( hasattr(window, 'frame_validValues') and (window.frame_validValues.grid_info() != {}) ):
+      num_abundance = 0
+      if(window.opt_abundance_var.get() == 'Absolute'):
+        num_abundance = int(window.ntr_abundance.get())
+      elif(window.opt_abundance_var.get() == 'Percentage'):
+        #get number of columns
+        num_cols = len(sub_set)
+        #calcolate num
+        num_abundance = window.proper_round((int(window.ntr_abundance.get()) * num_cols)/100)
+      #delete all row width 'num_cols' empty in Aboundance(F1,F2..) columns
+      df_final = df_final.dropna(subset=sub_set, thresh=num_abundance)
+    
+    #recreate abundace colums after drop some
+    sub_set = list(df_final.filter(regex=r'F\d+'))
+
+    #control for Re-Normalized
+    if( hasattr(window, 'chc_re_normalized')  and (window.chc_re_normalized.grid_info() != {}) ):
+      if(window.var_chc_re_normalized.get() == 1):
+        #RE-Normalize all colums
+        for col_name in sub_set:
+          df_final[col_name] = ( df_final[col_name]/df_final[col_name].sum() ) * 10000000000
+
+
+    #Control only for PSMs on Protoemoe Discovery
+    if(MyUtility.workDict["mode"] == 'PSMs'):
+      #prepare pivot table
+      table = pd.pivot_table(data=df_final,
+                             index=['Sequence'],
+                             columns=['File ID'],
+                             aggfunc='size')
+                             #fill_value=0) if I want fill Nan with 0
+      
+      #table.columns = table.columns.droplevel(0) #remove first line
+      table.columns.name = None               #File id
+      table = table.reset_index()                #index to columns
+
+      #marge original file with table
+      df_final = df_final.merge(table, left_on='Sequence', right_on='Sequence', how='left')
+
+      #remove duplicate
+      df_final = df_final.drop_duplicates(subset='Sequence', keep="last")
+
+      #remove "File ID" column
+      df_final.drop(['File ID'], inplace=True, axis=1, errors='ignore')
+
+      #reorder F columns
+      num = df_final.columns.str.extract('F(\d+)', expand=False).astype(float)
+      cols = df_final.columns.to_numpy(copy=True)
+      m = num.notna()
+      order = np.argsort(num[m])
+      cols[m] = cols[m][order]
+      df_final = df_final[cols]
+     
+    #control to put zero in empty cells
+    if( hasattr(window, 'chc_fill_zero') and (window.chc_fill_zero.grid_info() != {}) ):
+      if(window.var_chc_fill_zero.get() == 1):
+        df_final[sub_set] = df_final[sub_set].fillna(0)
+
+    #Final Reorder
+    if(MyUtility.workDict["mode"] == 'Proteins'):
+      #before save, reorder file according to "Accession" column
+      df_final = df_final.sort_values('Accession')
+    elif(MyUtility.workDict["mode"] == 'Peptides'):
+      #before save, reorder file according to "Sequence" column
+      df_final = df_final.sort_values('Sequence')
+    elif(MyUtility.workDict["mode"] == 'PSMs'):
+      #before save, reorder file according to "Sequence" column
+      df_final = df_final.sort_values('Sequence')
+    
+    #save edit df in tmp variable
+    window.df_tmp = df_final
+    
 #class to manage file on Taxonomic window
 class ManageTaxonomic(Thread):
   def __init__(self, window):
@@ -966,8 +1224,17 @@ class ManageTaxonomic(Thread):
     df_final = window.df.copy()
     df_final_annotation = window.df_annotation.copy()
 
+    #if it is necessary to rename the columns to avoid that in the main
+    #df and inn the one with the ci notations there are duplicates
+    rename_dict = {col: col+'_2' for col in df_final_annotation.columns if col in df_final.columns}
+    df_final_annotation = df_final_annotation.rename(columns=rename_dict)
+
+    #check if fill empty cells in annotation
+    if(window.var_chc_unassigned.get() == 1):
+      df_final_annotation = df_final_annotation.fillna('unassigned')
+
     #if mode is not proteins we need to add one columns
-    if(window.workDict["mode"] != 'proteins'):
+    if(MyUtility.workDict["mode"] != 'Proteins'):
       #add duplicate of sequence column
       #make copy of Sequence column
       column_to_duplicate = df_final['Sequence']
@@ -979,7 +1246,7 @@ class ManageTaxonomic(Thread):
       df_final['Sequence(I=L)'] = df_final['Sequence(I=L)'].replace('I','L', regex=True)
 
     #merge files
-    if(window.workDict["mode"] == 'proteins'):
+    if(MyUtility.workDict["mode"] == 'Proteins'):
       colname = df_final_annotation.columns[0]
       df_final = df_final.merge(df_final_annotation, left_on='Accession', right_on=colname, how='left')
       df_final.drop(['Accession No.'], inplace=True, axis=1, errors='ignore')
@@ -988,10 +1255,70 @@ class ManageTaxonomic(Thread):
       df_final.drop(['peptide'], inplace=True, axis=1, errors='ignore')
 
     #control to put zero in empty cells 
-    if(window.workDict['fill0'] == 1):
+    if(MyUtility.workDict['fill0'] == 1):
       #get abundace colums
       sub_set = list(df_final.filter(regex=r'F\d+'))
       df_final[sub_set] = df_final[sub_set].fillna(0)
+
+    #save edit df in tmp variable
+    window.df_tmp = df_final
+
+class ManageTaxonomicDynamic(Thread):
+  def __init__(self, window):
+    super().__init__()
+
+    #take window data
+    self.window = window
+
+  def run(self):
+    #take a copy of window to do controls
+    window = self.window
+    #create a copy for finale edits
+    df_final = window.df.copy()
+    df_final_annotation = window.df_annotation.copy()
+
+    #check if fill empty cells in annotation
+    if(window.var_chc_unassigned.get() == 1):
+      df_final_annotation = df_final_annotation.fillna('unassigned')
+
+    #Protein Acession
+    if( hasattr(window, 'frame_proteinAccession') ):
+      old_name = window.proteinAccession_listbox.get(0, tk.END)[0]
+      # Rinominiamo la colonna
+      df_final_annotation = df_final_annotation.rename(columns={old_name: 'Accession'})
+    #Peptide Sequence
+    if( hasattr(window, 'frame_peptideSequence') ):
+      old_name = window.peptideSequence_listbox.get(0, tk.END)[0]
+      # Rinominiamo la colonna
+      df_final_annotation = df_final_annotation.rename(columns={old_name: 'Sequence'})
+
+    #Remove useless columns
+    #get list of unused colums
+    useless_column = window.all_columns_listbox.get(0, tk.END)
+    existing_columns = [col for col in useless_column if col in df_final_annotation.columns]
+    df_final_annotation = df_final_annotation.drop(existing_columns, axis=1)
+
+    #if it is necessary to rename the columns to avoid that in the main
+    #df and inn the one with the ci notations there are duplicates
+    rename_dict = {col: col+'_2' for col in df_final_annotation.columns if col in df_final.columns}
+    df_final_annotation = df_final_annotation.rename(columns=rename_dict)
+
+    #merge files
+    if(MyUtility.workDict["mode"] == 'Proteins'):
+      df_final = df_final.merge(df_final_annotation, left_on='Accession', right_on='Accession_2', how='left')
+      df_final.drop(['Accession_2'], inplace=True, axis=1, errors='ignore')
+    else:
+      df_final = df_final.merge(df_final_annotation, left_on='Sequence', right_on='Sequence_2', how='left')
+      df_final.drop(['Sequence_2'], inplace=True, axis=1, errors='ignore')
+
+    #control to put zero in empty cells 
+    if(MyUtility.workDict['fill0'] == 1):
+      #get abundace colums
+      sub_set = list(df_final.filter(regex=r'F\d+'))
+      df_final[sub_set] = df_final[sub_set].fillna(0)
+
+    #Add table to dict for aggregation windows
+    MyUtility.workDict['taxonomic_table'] = [col for col in df_final_annotation.columns if col not in ['Accession', 'Sequence']]
 
     #save edit df in tmp variable
     window.df_tmp = df_final
@@ -1011,31 +1338,74 @@ class ManageFunctional(Thread):
     df_final = window.df.copy()
     df_final_annotation = window.df_annotation.copy()
 
+    #eventual edit for dynamic
+    if(MyUtility.workDict["functional_mode"] == 'dynamic'):
+      #Protein Acession
+      if( hasattr(window, 'frame_proteinAccession') ):
+        old_name = window.proteinAccession_listbox.get(0, tk.END)[0]
+        # Rinominiamo la colonna
+        df_final_annotation = df_final_annotation.rename(columns={old_name: 'query'})
+      if( hasattr(window, 'frame_peptideSequence') ):
+        old_name = window.peptideSequence_listbox.get(0, tk.END)[0]
+        # Rinominiamo la colonna
+        df_final_annotation = df_final_annotation.rename(columns={old_name: 'query'})
+      #KEGG
+      if( hasattr(window, 'frame_kegg_ko') and (window.kegg_ko_listbox.size() > 0) ):
+        old_name = window.kegg_ko_listbox.get(0, tk.END)[0]
+        # Rinominiamo la colonna
+        df_final_annotation = df_final_annotation.rename(columns={old_name: 'KEGG_ko'})
+      if( hasattr(window, 'frame_kegg_pathway') and (window.kegg_pathway_listbox.size() > 0) ):
+        old_name = window.kegg_pathway_listbox.get(0, tk.END)[0]
+        # Rinominiamo la colonna
+        df_final_annotation = df_final_annotation.rename(columns={old_name: 'KEGG_Pathway'})
+      if( hasattr(window, 'frame_kegg_module') and (window.kegg_module_listbox.size() > 0) ):
+        old_name = window.kegg_module_listbox.get(0, tk.END)[0]
+        # Rinominiamo la colonna
+        df_final_annotation = df_final_annotation.rename(columns={old_name: 'KEGG_Module'})
+      if( hasattr(window, 'frame_kegg_reaction') and (window.kegg_reaction_listbox.size() > 0) ):
+        old_name = window.kegg_reaction_listbox.get(0, tk.END)[0]
+        # Rinominiamo la colonna
+        df_final_annotation = df_final_annotation.rename(columns={old_name: 'KEGG_Reaction'})
+
+      #Remove useless columns
+      #get list of unused colums
+      useless_column = window.all_columns_listbox.get(0, tk.END)
+      existing_columns = [col for col in useless_column if col in df_final_annotation.columns]
+      df_final_annotation = df_final_annotation.drop(existing_columns, axis=1)
+
+    #if it is necessary to rename the columns to avoid that in the main
+    #df and inn the one with the ci notations there are duplicates
+    rename_dict = {col: col+'_2' for col in df_final_annotation.columns if col in df_final.columns}
+    df_final_annotation = df_final_annotation.rename(columns=rename_dict)
+
     #remove all "-" in the cells
     df_final.replace("-","",inplace=True)
     df_final_annotation.replace("-","",inplace=True)
 
+    #check if fill empty cells in annotation
+    if(window.var_chc_unassigned.get() == 1):
+      #extra check for only string
+      df_final_annotation = df_final_annotation.applymap(lambda x: 'unassigned' if pd.isna(x) or (isinstance(x, str) and x.strip() == '') else x)
+
     #Check if i need to take information starting from protein file or another
-    if(window.workDict["mode"] != 'proteins'):
-      df_final = (df_final.assign(query = df_final['Master Protein Accessions'].str.split('; '))
-               .explode('query')
-               .reset_index()
-               .merge(df_final_annotation, how='left', on='query')
-               .fillna('')
-               .astype(dict.fromkeys(df_final_annotation, str))
-               .groupby('index')
-               .agg({**dict.fromkeys(df_final, 'first'), **dict.fromkeys(df_final_annotation, ';'.join)})
-               .rename_axis(None))
+    if(MyUtility.workDict['mode'] == 'Proteins'):
+      columns_to_match = 'Accession'
     else:
-      df_final = (df_final.assign(query = df_final['Accession'].str.split('; '))
-         .explode('query')
-         .reset_index()
-         .merge(df_final_annotation, how='left', on='query')
-         .fillna('')
-         .astype(dict.fromkeys(df_final_annotation, str))
-         .groupby('index')
-         .agg({**dict.fromkeys(df_final, 'first'), **dict.fromkeys(df_final_annotation, ';'.join)})
-         .rename_axis(None))
+      if(MyUtility.workDict['functional_match'] == 'protein'):
+        columns_to_match = 'Master Protein Accessions'
+      else: #peptide
+        columns_to_match = 'Sequence'
+
+    #join final_df and annotation_df
+    df_final = (df_final.assign(query = df_final[columns_to_match].str.split('; '))
+             .explode('query')
+             .reset_index()
+             .merge(df_final_annotation, how='left', on='query')
+             .fillna('')
+             .astype(dict.fromkeys(df_final_annotation, str))
+             .groupby('index')
+             .agg({**dict.fromkeys(df_final, 'first'), **dict.fromkeys(df_final_annotation, ';'.join)})
+             .rename_axis(None))
 
     #remove a unused coloum
     df_final.drop(['query'], inplace=True, axis=1, errors='ignore')
@@ -1047,10 +1417,14 @@ class ManageFunctional(Thread):
     #df[cols] = df[cols].replace(r'^;{1,}$','', regex=True)
 
     #control to put zero in empty cells 
-    if(window.workDict['fill0'] == 1):
+    if(MyUtility.workDict['fill0'] == 1):
       #get abundace colums
       sub_set = list(df_final.filter(regex=r'F\d+'))
       df_final[sub_set] = df_final[sub_set].fillna(0)
+
+    #before control for kegg, remove 'ko:' from KEGG_KO
+    if 'KEGG_ko' in df_final.columns:
+      df_final['KEGG_ko'] = df_final['KEGG_ko'].str.replace('ko:', '')
 
     #Control to get KEGG data
     if(window.var_chc_kegg_description.get() == 1):
@@ -1131,9 +1505,46 @@ class ManageFunctional(Thread):
       #df_final['Reaction name'] = df_final['KEGG_Reaction'].str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
       df_final['Reaction name'] = df_final['KEGG_Reaction'].str.replace(';', '|', regex=False).str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
 
+    #Add table to dict for aggregation windows
+    MyUtility.workDict['functional_table'] = [col for col in df_final_annotation.columns if col not in ['query']]
+
     #save edit df in tmp variable
     window.df_tmp = df_final
 
+
+
+'''
+def prova():
+  category_to_search = {'KEGG_ko':False, 'KEGG_Pathway':False, 'KEGG_Module':False, 'KEGG_Reaction':True}
+  try:
+    #try all download here
+    if(category_to_search['KEGG_ko']):
+      #get online value of KEGG_ko
+      query_ko = kegg_list("orthology").read()
+      print(query_ko)
+    if(category_to_search['KEGG_Pathway']):
+      #get online value of KEGG_pathway
+      query_pathway = kegg_list("pathway").read()
+      print(query_pathway)
+    if(category_to_search['KEGG_Module']):
+      #get online value of KEGG_module
+      query_module = kegg_list("module").read()
+      print(query_module)
+    if(category_to_search['KEGG_Reaction']):
+      #get online value of KEGG_reaction
+      query_reaction = kegg_list("reaction").read()
+      print(query_reaction)
+  except Exception as e:
+    #print("===>>" + str(e))
+    self.internetWork = False
+    return
+
+  #Manage the online results
+  #manage_kegg_query(self)
+  print('FINE')
+
+prova()
+'''
 
 
 ### Old code ###

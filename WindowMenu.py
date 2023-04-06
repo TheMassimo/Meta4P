@@ -1,3 +1,10 @@
+#import config module for environmental variability
+import config
+#import my utility class and function
+import MyUtility
+#import my multi threading function to upload and download file
+from MyMultiThreading import *
+
 #tkinter import
 import tkinter as tk
 from tkinter import *
@@ -5,47 +12,26 @@ from tkinter import ttk
 from tkinter.messagebox import showinfo
 
 #Import all windows class
-import WindowProteins as wPr
-import WindowPeptide as wPe
-import WindowPSMs as wPS
-import WindowTemplate as wTm
-#import my multi threading function to upload and download file
-from MyMultiThreading import *
-
-
+import WindowInputType as wIT
+import WindowRenameColumns as wRC
 
 class MenuWindow(tk.Tk): #tk.Toplevel):
     def __init__(self):
         super().__init__()
 
         #change icon
-        img = PhotoImage(file=resource_path("M4P_icon.png"))
+        img = PhotoImage(file=resource_path(config.icon))
         self.iconphoto(False, img)
 
         # configure the root window
         self.title('Meta4P') #Meta Protein Annotation Aggregation
-        self.geometry('405x270')
 
-        #font
-        font_title = ('Calibri', 18, 'bold')
-        font_subtitle = ('Calibri', 14, 'bold')
-        font_button = ('Calibri', 10)
-
-        #title label
-        self.lbl_title = tk.Label(self, text='Input type',width=30, font=font_title)  
-        self.lbl_title.grid(row=0, column=0, padx=6, pady=6)
-        #Proteins button
-        self.btn_proteins = tk.Button(self, text='Proteins', width=26, font=font_button, command=self.create_proteins)
-        self.btn_proteins.grid(row=1, column=0, padx=5, pady=5)
-        #Peptide button
-        self.btn_peptide = tk.Button(self, text='Peptides', width=26, font=font_button, command=self.create_peptide)
-        self.btn_peptide.grid(row=2, column=0, padx=5, pady=5)
-        #PSMs button
-        self.btn_psms = tk.Button(self, text='PSMs', width=26, font=font_button, command=self.create_psms)
-        self.btn_psms.grid(row=3, column=0, padx=5, pady=5)
-        #Template button
-        self.btn_template = tk.Button(self, text='Rename/reorder sample columns', width=26, font=font_button, command=self.create_template)
-        self.btn_template.grid(row=4, column=0, padx=5, pady=(45,5))
+        #New Analysis button
+        self.btn_newAnalysis = tk.Button(self, text='Start a new analysis', width=26, font=config.font_button, command=self.create_inputType)
+        self.btn_newAnalysis.grid(row=0, column=0, padx=30, pady=(30,10))
+        #Rename Columns button
+        self.btn_renameColumns = tk.Button(self, text='Rename/reorder columns of\n existing Meta4P outputs', width=26, font=config.font_button, command=self.create_renameColumns)
+        self.btn_renameColumns.grid(row=1, column=0, padx=30, pady=(10,30))
 
         #put this window up
         self.lift()
@@ -57,29 +43,17 @@ class MenuWindow(tk.Tk): #tk.Toplevel):
         if tk.messagebox.askokcancel("Quit", "Do you want to quit?"):
             self.destroy()
 
-    def create_proteins(self):
+    def create_inputType(self):
         #hide menu window
         self.withdraw()
         #create new window
-        self.windowPr = wPr.ProteinsWindow(self)
+        self.windowIT = wIT.InputTypeWindow(self)
 
-    def create_peptide(self):
+    def create_renameColumns(self):
         #hide menu window
         self.withdraw()
         #create new window
-        self.windowPe = wPe.PeptideWindow(self)
-
-    def create_psms(self):
-        #hide menu window
-        self.withdraw()
-        #create new window
-        self.windowPS = wPS.PSMsWindow(self)
-
-    def create_template(self):
-        #hide menu window
-        self.withdraw()
-        #create new window
-        self.windowTm = wTm.TemplateWindow(self, self)
+        self.windowRC = wRC.RenameColumnsWindow(self, self)
 
 
 '''

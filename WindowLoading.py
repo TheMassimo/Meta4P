@@ -1,10 +1,14 @@
+#import config module for environmental variability
+import config
+#import my utility class and function
+import MyUtility
+#import my multi threading function to upload and download file
+from MyMultiThreading import *
+
 #tkinter import
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
-
-#import my multi threading function to upload and download file
-from MyMultiThreading import *
 
 class LoadingWindow(tk.Toplevel):
 
@@ -12,12 +16,12 @@ class LoadingWindow(tk.Toplevel):
     super().__init__()
 
     #change icon
-    img = PhotoImage(file=resource_path("M4P_icon.png"))
+    img = PhotoImage(file=resource_path(config.icon))
     self.iconphoto(False, img)
 
     # configure the root window
     self.title('Loading')
-    self.geometry('417x130')
+
     # move window center
     winWidth = self.winfo_reqwidth()
     winwHeight = self.winfo_reqheight()
@@ -25,11 +29,9 @@ class LoadingWindow(tk.Toplevel):
     posDown = int(self.winfo_screenheight() / 2 - winwHeight / 2)
     self.geometry("+{}+{}".format(posRight, posDown))
 
-    #fonts
-    self.font_title=('Calibri', 18, 'bold')
 
     #title label
-    self.lbl_loadFile = tk.Label(self, text=loading_text, width=30,font=self.font_title)  
+    self.lbl_loadFile = tk.Label(self, text=loading_text, width=30,font=config.font_title)  
     self.lbl_loadFile.grid(row=0, column=0, padx=10, pady=10)
 
     #create a progressbar
@@ -39,7 +41,7 @@ class LoadingWindow(tk.Toplevel):
       mode='indeterminate',
       length=200
     )
-    pb.grid(row=1, column=0, padx=10, pady=10)
+    pb.grid(row=1, column=0, padx=10, pady=(10,30))
     pb.start(18) #value in ms (default is 50ms)
 
     #put window in front
@@ -47,8 +49,8 @@ class LoadingWindow(tk.Toplevel):
     #prevent touch in other windows
     self.grab_set()
 
-    #Disable exit button
-    #self.protocol("WM_DELETE_WINDOW", disable_event)
+    #Disable exit button and other
+    self.attributes("-disabled", True)
 
 
 if __name__ == "__main__":
