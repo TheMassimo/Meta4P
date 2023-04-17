@@ -34,7 +34,7 @@ class InformationLevelWindow(tk.Toplevel): #tk.Tk):
         self.geometry('355x270')
 
         #title label
-        self.lbl_title = tk.Label(self, text='Input type',width=30, font=config.font_title)  
+        self.lbl_title = tk.Label(self, text='Data level',width=30, font=config.font_title)  
         self.lbl_title.grid(row=0, column=0, padx=6, pady=6)
         #Proteins button
         self.btn_proteins = tk.Button(self, text='Proteins', width=26, font=config.font_button, command=self.do_proteins)
