@@ -195,7 +195,7 @@ class AsyncUpload(Thread):
       if file_extension == "xlsx":
         self.df = pd.read_excel(self.filepath)
       else:
-        self.df = pd.read_csv(self.filepath, sep='\t')
+        self.df = pd.read_csv(self.filepath, sep='\t', low_memory=False)
     except Exception as e:
       #print("===>>" + str(e))
       self.fileOpen = False
@@ -450,7 +450,6 @@ class AsyncDownload_Aggregation(Thread):
 
           df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name].str.split('[,;]'))
             .explode('new_col')
-            .drop_duplicates()
             .groupby('new_col', as_index=False)
             .count())
 
@@ -486,7 +485,6 @@ class AsyncDownload_Aggregation(Thread):
         #create the new file with the sum of aboundances
         df_tmp = (df_tmp.assign(new_col=df_tmp[col_name].str.split('[,;]'))
           .explode('new_col')
-          .drop_duplicates()
           .groupby('new_col', as_index=False)
           .sum(min_count=1))
 
@@ -581,7 +579,6 @@ class AsyncDownload_Aggregation(Thread):
 
           df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name_2].str.split('[,;]'))
             .explode('new_col')
-            .drop_duplicates()
             .groupby([col_name_1, 'new_col'], as_index=False)
             .count())
 
@@ -617,7 +614,6 @@ class AsyncDownload_Aggregation(Thread):
         #create the new file with the sum of aboundaces
         df_tmp = (df_tmp.assign(new_col=df_tmp[col_name_2].str.split('[,;]'))
               .explode('new_col')
-              .drop_duplicates()
               .groupby([col_name_1, 'new_col'], as_index=False)
               .sum(min_count=1))
 
