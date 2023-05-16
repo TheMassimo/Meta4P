@@ -954,6 +954,14 @@ class ManageData(Thread):
       df_final = df_final[col_list]
       #re put nan in empty cells
       df_final[abn_list] = df_final[abn_list].replace({0:np.nan})
+
+      #show at first Sequence and at second Master Protein Accessions
+      #extract columns from dataframe
+      sequence_col = df_final.pop('Sequence')
+      master_col = df_final.pop('Master Protein Accessions')
+      #insert columns in correct order
+      df_final.insert(0, 'Sequence', sequence_col)
+      df_final.insert(1, 'Master Protein Accessions', master_col)
     
     #create abundace colums after drop some
     sub_set = list(df_final.filter(regex=r'F\d+'))
@@ -1500,6 +1508,14 @@ class ManageFunctional(Thread):
       # 'ko:123|ko:111|ko:222|ko:333|ko:444|ko:555'
       #df_final['Reaction name'] = df_final['KEGG_Reaction'].str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
       df_final['Reaction name'] = df_final['KEGG_Reaction'].str.replace(';', '|', regex=False).str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
+
+    #replace empty cell with "unassigned"
+    # Verifica la presenza delle colonne di interesse nel DataFrame
+    all_columns_to_fill = df_final_annotation.columns.tolist()
+    columns_to_fill = [col for col in all_columns_to_fill if col in df_final.columns.tolist()]
+    df_final[columns_to_fill] = df_final[columns_to_fill].fillna(value='unassigned')
+    # Sostituisci le stringhe vuote ('') con "unassigned" nelle colonne di interesse
+    df_final[columns_to_fill] = df_final[columns_to_fill].replace('', 'unassigned')
 
     #Add table to dict for aggregation windows
     MyUtility.workDict['functional_table'] = [col for col in df_final_annotation.columns if col not in ['query']]
