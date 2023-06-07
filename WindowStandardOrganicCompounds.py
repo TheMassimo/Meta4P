@@ -673,6 +673,9 @@ class StandardOrganicCompoundsWindow(tk.Toplevel): #tk.Tk):
       return True
 
     #check for abundance
+    if(not self.ntr_abundance.get().isdigit()):
+      self.ntr_abundance.insert(0, "0")
+
     num_abundance = int(self.ntr_abundance.get())
     #control type
     if(self.opt_abundance_var.get() == 'Absolute'):

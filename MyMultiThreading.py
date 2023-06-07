@@ -439,7 +439,7 @@ class AsyncDownload_Aggregation(Thread):
         df_tmp[aboundance_cols] = df_tmp[aboundance_cols].replace({0:np.nan})
 
         #controls for supplementary tables
-        if(self.params["sup_tab"]):
+        if(self.params["sup_tab"] or self.params["extra_counts_col"] or self.params["counts_col"]):
           #re put nan in empty cells
           df_tmp_sup[aboundance_cols] = df_tmp_sup[aboundance_cols].replace({0:np.nan})
 
@@ -568,7 +568,7 @@ class AsyncDownload_Aggregation(Thread):
         df_tmp[aboundance_cols] = df_tmp[aboundance_cols].replace({0:np.nan})
 
         #controls for supplementary tables
-        if(self.params["sup_tab"]):
+        if(self.params["sup_tab"] or self.params["extra_counts_col"] or self.params["counts_col"]):
           #re put nan in empty cells
           df_tmp_sup[aboundance_cols] = df_tmp_sup[aboundance_cols].replace({0:np.nan})
 
@@ -683,6 +683,31 @@ class AsyncDownload_Aggregation(Thread):
 
         #edit final_path
         final_path = self.params["prefix"] + col_name_1 + "+" + col_name_2 + self.params["suffix"]
+
+      #control to add extra columns in file to show proteins/peptides count
+      if self.params["extra_counts_col"] or self.params["counts_col"] :
+        # Get last column from df_tmp_sup (that contain counts)
+        last_column_df1 = df_tmp_sup.iloc[:, -1]
+        # Get the original column name from df_tmp_sup
+        column_name = df_tmp_sup.columns[-1]
+        # Add last column of df_tmp_sup as last column of df_tmp with original name
+        df_tmp[column_name] = last_column_df1
+
+      #control for numbers of proteins/peptides if need
+      if self.params["counts_col"] :
+        #check to eliminate lines that do not contain enough proteins or peptides
+        min_counts = self.params["min_counts"]
+        if(min_counts > 0):
+          # Delete rows with less than required value in last column
+          df_tmp = df_tmp.loc[df_tmp.iloc[:, -1] >= min_counts]
+          if self.params["sup_tab"] :
+            df_tmp_sup = df_tmp_sup.loc[df_tmp_sup.iloc[:, -1] >= min_counts]
+
+        #check if i need to remove last column from normal file
+        #(maybe it was just to remove the subthreshold columns but you didn't want to display them)
+        if( not self.params["extra_counts_col"] ):
+          # Deleting the last column
+          df_tmp = df_tmp.drop(df_tmp.columns[-1], axis=1)
 
       #control to put zero in empty cells 
       if(self.params['fill0'] == 1):
@@ -1233,10 +1258,6 @@ class ManageTaxonomic(Thread):
     rename_dict = {col: col+'_2' for col in df_final_annotation.columns if col in df_final.columns}
     df_final_annotation = df_final_annotation.rename(columns=rename_dict)
 
-    #check if fill empty cells in annotation
-    if(window.var_chc_unassigned.get() == 1):
-      df_final_annotation = df_final_annotation.fillna('unassigned')
-
     #if mode is not proteins we need to add one columns
     if(MyUtility.workDict["mode"] != 'Proteins'):
       #add duplicate of sequence column
@@ -1264,6 +1285,15 @@ class ManageTaxonomic(Thread):
       sub_set = list(df_final.filter(regex=r'F\d+'))
       df_final[sub_set] = df_final[sub_set].fillna(0)
 
+    #check if fill empty cells in annotation
+    if(window.var_chc_unassigned.get() == 1):
+      # Verifica la presenza delle colonne di interesse nel DataFrame
+      all_columns_to_fill = df_final_annotation.columns.tolist()
+      columns_to_fill = [col for col in all_columns_to_fill if col in df_final.columns.tolist()]
+      df_final[columns_to_fill] = df_final[columns_to_fill].fillna(value='unassigned')
+      # Sostituisci le stringhe vuote ('') con "unassigned" nelle colonne di interesse
+      df_final[columns_to_fill] = df_final[columns_to_fill].replace('', 'unassigned')
+
     #save edit df in tmp variable
     window.df_tmp = df_final
 
@@ -1280,10 +1310,6 @@ class ManageTaxonomicDynamic(Thread):
     #create a copy for finale edits
     df_final = window.df.copy()
     df_final_annotation = window.df_annotation.copy()
-
-    #check if fill empty cells in annotation
-    if(window.var_chc_unassigned.get() == 1):
-      df_final_annotation = df_final_annotation.fillna('unassigned')
 
     #Protein Acession
     if( hasattr(window, 'frame_proteinAccession') ):
@@ -1320,6 +1346,15 @@ class ManageTaxonomicDynamic(Thread):
       #get abundace colums
       sub_set = list(df_final.filter(regex=r'F\d+'))
       df_final[sub_set] = df_final[sub_set].fillna(0)
+
+    #check if fill empty cells in annotation
+    if(window.var_chc_unassigned.get() == 1):
+      # Verifica la presenza delle colonne di interesse nel DataFrame
+      all_columns_to_fill = df_final_annotation.columns.tolist()
+      columns_to_fill = [col for col in all_columns_to_fill if col in df_final.columns.tolist()]
+      df_final[columns_to_fill] = df_final[columns_to_fill].fillna(value='unassigned')
+      # Sostituisci le stringhe vuote ('') con "unassigned" nelle colonne di interesse
+      df_final[columns_to_fill] = df_final[columns_to_fill].replace('', 'unassigned')
 
     #Add table to dict for aggregation windows
     MyUtility.workDict['taxonomic_table'] = [col for col in df_final_annotation.columns if col not in ['Accession', 'Sequence']]
@@ -1376,6 +1411,17 @@ class ManageFunctional(Thread):
       useless_column = window.all_columns_listbox.get(0, tk.END)
       existing_columns = [col for col in useless_column if col in df_final_annotation.columns]
       df_final_annotation = df_final_annotation.drop(existing_columns, axis=1)
+
+    #If the dog column is present inside the dataframe, I separate all the letters inside it with a comma
+    if 'COG_category' in df_final_annotation.columns:
+      # Applying the function to strings with more than one character
+      df_final_annotation['COG_category'] = np.where(df_final_annotation['COG_category'].str.len() > 1,
+                                 df_final_annotation['COG_category'].str.replace('', ',').str[1:-1],
+                                 df_final_annotation['COG_category'])
+      # Finding single-character strings
+      single_char_mask = df_final_annotation['COG_category'].str.len() == 1
+      # Replacing single-character strings with the original value
+      df_final_annotation.loc[single_char_mask, 'COG_category'] = df_final_annotation.loc[single_char_mask, 'COG_category'].str[0]
 
     #if it is necessary to rename the columns to avoid that in the main
     #df and inn the one with the ci notations there are duplicates
@@ -1510,12 +1556,14 @@ class ManageFunctional(Thread):
       df_final['Reaction name'] = df_final['KEGG_Reaction'].str.replace(';', '|', regex=False).str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
 
     #replace empty cell with "unassigned"
-    # Verifica la presenza delle colonne di interesse nel DataFrame
-    all_columns_to_fill = df_final_annotation.columns.tolist()
-    columns_to_fill = [col for col in all_columns_to_fill if col in df_final.columns.tolist()]
-    df_final[columns_to_fill] = df_final[columns_to_fill].fillna(value='unassigned')
-    # Sostituisci le stringhe vuote ('') con "unassigned" nelle colonne di interesse
-    df_final[columns_to_fill] = df_final[columns_to_fill].replace('', 'unassigned')
+    #check if fill empty cells in annotation
+    if(window.var_chc_unassigned.get() == 1):
+      # Verifica la presenza delle colonne di interesse nel DataFrame
+      all_columns_to_fill = df_final_annotation.columns.tolist()
+      columns_to_fill = [col for col in all_columns_to_fill if col in df_final.columns.tolist()]
+      df_final[columns_to_fill] = df_final[columns_to_fill].fillna(value='unassigned')
+      # Sostituisci le stringhe vuote ('') con "unassigned" nelle colonne di interesse
+      df_final[columns_to_fill] = df_final[columns_to_fill].replace('', 'unassigned')
 
     #Add table to dict for aggregation windows
     MyUtility.workDict['functional_table'] = [col for col in df_final_annotation.columns if col not in ['query']]

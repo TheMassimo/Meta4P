@@ -18,6 +18,8 @@ from tkinter.ttk import Separator, Style
 input_type       -> proteome/mzTab/other
 mode             -> Proteins/Peptides/PSMs
 fill0            -> 0/1
+extra_counts_col -> 0/1
+counts_col       -> 0/1
 taxonomic_mode   -> standard/dynamic
 taxonomic        -> True/False
 taxonomic_table  -> [] #that contains the name of taxonomic columns  

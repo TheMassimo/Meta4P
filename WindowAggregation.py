@@ -50,6 +50,9 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     # configure the root window
     self.title('Data aggregation')
 
+    #for Entry widget
+    self.vcmd = (self.register(self.onValidate), '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
+
     #fixed list to use with proteome
     if(MyUtility.workDict['taxonomic_mode'] == 'dynamic'):
       self.list_taxonomic             = MyUtility.workDict['taxonomic_table']
@@ -79,11 +82,25 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     self.lbl_chooseTaxonomic = tk.Label(self.frame_left, text='Taxonomic levels', width=20, font=config.font_title)  
     self.lbl_chooseTaxonomic.grid(row=0, column=0, padx=6, pady=6)
     if(MyUtility.workDict["taxonomic"]):
+      #Load/download frame
+      self.frame_taxonomic_buttons = tk.Frame(self.frame_left, borderwidth=0, relief='flat')
+      self.frame_taxonomic_buttons.grid(row=1, column=0, padx=2, pady=2, sticky="nsew")
+      #select all checkbox
+      self.btn_taxonomic_all = tk.Button(self.frame_taxonomic_buttons, text='Select all', font=config.font_button, width=11)
+      self.btn_taxonomic_all.grid(row=0, column=0, padx=20, pady=5)
+      #select none checkbox
+      self.btn_taxonomic_none = tk.Button(self.frame_taxonomic_buttons, text='Deselect all', font=config.font_button, width=11)
+      self.btn_taxonomic_none.grid(row=0, column=1, padx=0, pady=5)
+
       #taxonomic scroll
       self.scl_check_taxonomic = MyUtility.CheckboxList(self.frame_left, bg="grey", padx=1, pady=1, height=360)
-      self.scl_check_taxonomic.grid(row=1,column=0, rowspan=4)
+      self.scl_check_taxonomic.grid(row=2,column=0, rowspan=4)
       #pass list to create checkbox
       self.scl_check_taxonomic.insertCheckbox(self.list_taxonomic)
+
+      #add function to select all or deselect all
+      self.btn_taxonomic_all.config(command=self.scl_check_taxonomic.selectAllCheckbox)
+      self.btn_taxonomic_none.config(command=self.scl_check_taxonomic.deselectAllCheckbox)
     else:
       self.lbl_noTaxonomic = tk.Label(self.frame_left, text='No annotations', width=20, font=config.font_up_base)  
       self.lbl_noTaxonomic.grid(row=1, column=0, padx=5, pady=5)
@@ -92,36 +109,37 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     self.lbl_chooseFunctional = tk.Label(self.frame_left, text='Functional levels', font=config.font_title)  
     self.lbl_chooseFunctional.grid(row=0, column=1, padx=6, pady=6)
     if(MyUtility.workDict["functional"]):
+      #Load/download frame
+      self.frame_functional_buttons = tk.Frame(self.frame_left, borderwidth=0, relief='flat')
+      self.frame_functional_buttons.grid(row=1, column=1, padx=2, pady=2, sticky="nsew")
+      #select all checkbox
+      self.btn_functional_all = tk.Button(self.frame_functional_buttons, text='Select all', font=config.font_button, width=11)
+      self.btn_functional_all.grid(row=0, column=0, padx=12, pady=5)
+      #select none checkbox
+      self.btn_functional_none = tk.Button(self.frame_functional_buttons, text='Deselect all', font=config.font_button, width=11)
+      self.btn_functional_none.grid(row=0, column=1, padx=0, pady=5)
+
       #functional scroll
       self.scl_check_functional = MyUtility.CheckboxList(self.frame_left, bg="grey", padx=1, pady=1, height=360)
-      self.scl_check_functional.grid(row=1,column=1, rowspan=4)
+      self.scl_check_functional.grid(row=2,column=1, rowspan=4)
       #pass list to create checkbox
       self.scl_check_functional.insertCheckbox(self.list_functional_to_display)
-      '''
-      i = 0
-      self.chcs_functional = []
-      self.var_chcs_functional = []
-      for x in self.list_functional_to_display:
-        c = i
-        self.var_chcs_functional.append(IntVar(value=0))
-        self.chcs_functional.append( tk.Checkbutton(self, text=x, width=20, anchor="w", variable=self.var_chcs_functional[c], onvalue=1, offvalue=0) )
-        self.chcs_functional[i].grid(row=(i+2), column=1, padx=(50,0), pady=5)
-        self.chcs_functional[i].config( font = config.font_checkbox )
-        self.chcs_functional[i].select()
-        i = i+1
-      '''
+
+      #add function to select all or deselect all
+      self.btn_functional_all.config(command=self.scl_check_functional.selectAllCheckbox)
+      self.btn_functional_none.config(command=self.scl_check_functional.deselectAllCheckbox)
 
       #control for online reserch of kegg code
       #label title
       self.lbl_keggOnline = tk.Label(self.frame_left, text='Retrieve KEGG name', width=20, font=config.font_kegg_title)  
-      self.lbl_keggOnline.grid(row=5, column=1, padx=6, pady=6)
+      self.lbl_keggOnline.grid(row=6, column=1, padx=6, pady=6)
       #label description
       self.lbl_keggOnline_info = tk.Label(self.frame_left, text='(working internet connection needed)', width=30, font=config.font_info)  
-      self.lbl_keggOnline_info.grid(row=6, column=1, padx=6, pady=0)
+      self.lbl_keggOnline_info.grid(row=7, column=1, padx=6, pady=0)
       #checkbox
       self.var_chcs_kegg = IntVar(value=1)
       self.chcs_kegg = tk.Checkbutton(self.frame_left, text="yes", width=20, anchor="w", variable=self.var_chcs_kegg, onvalue=1, offvalue=0)
-      self.chcs_kegg.grid(row=7, column=1, padx=(50,0), pady=5)
+      self.chcs_kegg.grid(row=8, column=1, padx=(50,0), pady=5)
       self.chcs_kegg.select()
       self.chcs_kegg.config( font = config.font_checkbox )
     else:
@@ -196,23 +214,60 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     #chek if there are at least one annotation file
     if(MyUtility.workDict["taxonomic"] or MyUtility.workDict["functional"]):
       #option to extra table download
-      self.lbl_sup_tab = tk.Label(self.frame_right, text='Supplementary tables',width=25,font=config.font_title)
+      self.lbl_sup_tab = tk.Label(self.frame_right, text='Feature-related peptide counts',width=25,font=config.font_title)
       self.lbl_sup_tab.grid(row=0, column=0, padx=6, pady=6)
 
       #checkbox text according to start choose
-      box_text = "Feature-related peptide counts"
+      box_text = "Export separate tables\n(with single sample and total peptide counts)"
       if(MyUtility.workDict["mode"] == 'Proteins'):
-        box_text = "Feature-related protein counts"
-      #checkbox
+        box_text = "Export separate tables\n(with single sample and total protein counts)"
+      #checkbox for choose if download extra tables
       self.var_chcs_sup = IntVar(value=0)
-      self.chcs_sup = tk.Checkbutton(self.frame_right, text=box_text, width=25, variable=self.var_chcs_sup, onvalue=1, offvalue=0)
+      self.chcs_sup = tk.Checkbutton(self.frame_right, text=box_text, width=25, wraplength=200, anchor="w", variable=self.var_chcs_sup, onvalue=1, offvalue=0)
       self.chcs_sup.config(font = config.font_checkbox )
       self.chcs_sup.grid(row=1, column=0, padx=5, pady=5)
 
+      #checkbox for extra column in results
+      #checkbox text according to start choose
+      box_text = "Insert a supplementary column\nin all tables\n(with total peptide counts)"
+      if(MyUtility.workDict["mode"] == 'Proteins'):
+        box_text = "Insert a supplementary column\nin all tables\n(with total protein counts)"
+      self.var_chcs_counts_col = IntVar(value=0)
+      self.chcs_counts_col = tk.Checkbutton(self.frame_right, text=box_text, width=25, wraplength=200, anchor="w", variable=self.var_chcs_counts_col, onvalue=1, offvalue=0, command=self.change_extra_counts_col)
+      self.chcs_counts_col.config(font = config.font_checkbox )
+      self.chcs_counts_col.grid(row=2, column=0, padx=5, pady=5)
+      #save start status
+      MyUtility.workDict["extra_counts_col"] = self.var_chcs_counts_col.get()      
+
+      #checkbox for choose if filter the counts
+      #checkbox text according to start choose
+      box_text = "Filter features (rows) based\non the related peptide counts"
+      if(MyUtility.workDict["mode"] == 'Proteins'):
+        box_text = "Filter features (rows) based\non the related protein counts"
+      self.var_chcs_filter_count = IntVar(value=0)
+      self.chcs_filter_count = tk.Checkbutton(self.frame_right, text=box_text, width=25, wraplength=200, anchor="w", variable=self.var_chcs_filter_count, onvalue=1, offvalue=0, command=self.counts_filter_control)
+      self.chcs_filter_count.config(font = config.font_checkbox )
+      self.chcs_filter_count.grid(row=3, column=0, padx=5, pady=5)
+      #save start status
+      MyUtility.workDict["counts_col"] = self.var_chcs_filter_count.get()
+
+      #Entry for quantity of filter
+      self.ntr_filter_counts = tk.Entry(self.frame_right, width=20, validate="key", validatecommand=self.vcmd)
+      self.ntr_filter_counts.insert(0, "0")
+      self.ntr_filter_counts.grid(row=4, column=0, padx=5, pady=5)
+      self.ntr_filter_counts.configure(state='disabled')
+
+      #quantity filter info
+      #checkbox text according to start choose
+      box_text = "(min. number of peptides)"
+      if(MyUtility.workDict["mode"] == 'Proteins'):
+        box_text = "(min. number of protein)"
+      self.lbl_abundanceTot = tk.Label(self.frame_right, text=box_text, width=20, font=config.font_description)
+      self.lbl_abundanceTot.grid(row=5, column=0, padx=5, pady=(0,5))
+
       #Download button
       self.btn_remove_all = tk.Button(self.frame_right, text='Download table(s)', font=config.font_button, width=18, command=self.pre_download)
-      self.btn_remove_all.grid(row=2, column=0, rowspan=2, padx=10, pady=(40,6))
-
+      self.btn_remove_all.grid(row=6, column=0, rowspan=2, padx=10, pady=(40,6))
 
     ### down area ###
     self.frame_down = tk.Frame(self, borderwidth=2, relief='flat')
@@ -240,6 +295,28 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
   def on_closing(self):
     if tk.messagebox.askokcancel("Quit", "Do you want to quit?"):
       self.wn_root.destroy()
+
+  #validate for some entry
+  def onValidate(self, d, i, P, s, S, v, V, W):
+    '''
+    self.text.delete("1.0", "end")
+    self.text.insert("end","OnValidate:\n")
+    self.text.insert("end","d='%s'\n" % d)
+    self.text.insert("end","i='%s'\n" % i)
+    self.text.insert("end","P='%s'\n" % P)
+    self.text.insert("end","s='%s'\n" % s)
+    self.text.insert("end","S='%s'\n" % S)
+    self.text.insert("end","v='%s'\n" % v)
+    self.text.insert("end","V='%s'\n" % V)
+    self.text.insert("end","W='%s'\n" % W)
+    # Disallow anything but lowercase letters
+    if S == S.lower():
+        return True
+    else:
+        self.bell()
+        return False
+    '''
+    return S.isdigit()  
 
   def monitor_download(self, thread):
     if thread.is_alive():
@@ -285,6 +362,19 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
   def remove_all_alement(self):
     #delete all element from list
     self.my_listbox.delete(0, END)
+
+  def counts_filter_control(self):
+    # Change value according to checkbox
+    MyUtility.workDict["counts_col"] = self.var_chcs_filter_count.get()
+    # Change entry status
+    if(self.var_chcs_filter_count.get() == 1):
+      self.ntr_filter_counts.configure(state='normal')
+    else:
+      self.ntr_filter_counts.configure(state='disabled')
+
+  def change_extra_counts_col(self):
+    #change value according to checkbox
+    MyUtility.workDict["extra_counts_col"] = self.var_chcs_counts_col.get()
 
   def create_list(self):
     #create empty list
@@ -365,12 +455,20 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
       sup_tab = False
       if(MyUtility.workDict["taxonomic"] or MyUtility.workDict["functional"]):
         sup_tab = self.var_chcs_sup.get()
+
+      #check if entry for minimu peptides or proteins count is valid
+      if(not self.ntr_filter_counts.get().isdigit()):
+        self.ntr_filter_counts.insert(0, "0")
+
       #create a dictionary to pass
       params = {
         "keggOnline": keggOnline,
         "sup_tab": sup_tab,
         "mode": MyUtility.workDict["mode"],
         "fill0": MyUtility.workDict["fill0"],
+        "extra_counts_col": MyUtility.workDict["extra_counts_col"],
+        "counts_col": MyUtility.workDict["counts_col"],
+        "min_counts": int(self.ntr_filter_counts.get()),
         "prefix": self.prefix,
         "suffix": self.suffix
       }
