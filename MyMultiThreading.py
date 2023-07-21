@@ -1234,7 +1234,7 @@ class ManageDataDynamic(Thread):
     elif(MyUtility.workDict["mode"] == 'PSMs'):
       #before save, reorder file according to "Sequence" column
       df_final = df_final.sort_values('Sequence')
-    
+
     #save edit df in tmp variable
     window.df_tmp = df_final
     
@@ -1446,8 +1446,9 @@ class ManageFunctional(Thread):
       else: #peptide
         columns_to_match = 'Sequence'
 
+    theSeparator = MyUtility.workDict["master_protein_separator"]
     #join final_df and annotation_df
-    df_final = (df_final.assign(query = df_final[columns_to_match].str.split('; '))
+    df_final = (df_final.assign(query = df_final[columns_to_match].str.split(theSeparator))
              .explode('query')
              .reset_index()
              .merge(df_final_annotation, how='left', on='query')

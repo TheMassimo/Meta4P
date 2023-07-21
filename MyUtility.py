@@ -15,21 +15,22 @@ from tkinter.ttk import Separator, Style
 
 #common variable
 '''
-input_type       -> proteome/mzTab/other
-mode             -> Proteins/Peptides/PSMs
-fill0            -> 0/1
-extra_counts_col -> 0/1
-counts_col       -> 0/1
-taxonomic_mode   -> standard/dynamic
-taxonomic        -> True/False
-taxonomic_table  -> [] #that contains the name of taxonomic columns  
-functional_mode  -> standard/dynamic
-functional       -> True/False
-functional_table -> [] #that contains the name of functional columns
-functional_match -> protein/peptide
+input_type               -> proteome/mzTab/other
+mode                     -> Proteins/Peptides/PSMs
+fill0                    -> 0/1
+master_protein_separator -> default: "; "
+extra_counts_col         -> 0/1
+counts_col               -> 0/1
+taxonomic_mode           -> standard/dynamic
+taxonomic                -> True/False
+taxonomic_table          -> [] #that contains the name of taxonomic columns  
+functional_mode          -> standard/dynamic
+functional               -> True/False
+functional_table         -> [] #that contains the name of functional columns
+functional_match         -> protein/peptide
 '''
 workDict = {}
-
+workDict["master_protein_separator"] = "; "
 
 #common class
 class CheckboxList(tk.Frame):

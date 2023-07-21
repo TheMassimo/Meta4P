@@ -124,6 +124,8 @@ class DynamicOrganicCompoundsWindow(tk.Toplevel): #tk.Tk):
     if(MyUtility.workDict['mode'] != 'PSMs'):
       self.make_re_normalized(p_row=5, p_text='Normalize abundances (after filtering)')
 
+    if(MyUtility.workDict['mode'] != 'Proteins'):
+      self.make_separator(p_row=6, p_column=0, p_sticky='n')
 
     ### down area ###
     self.frame_down = tk.Frame(self, borderwidth=2, relief='flat')
@@ -369,6 +371,19 @@ class DynamicOrganicCompoundsWindow(tk.Toplevel): #tk.Tk):
     self.chc_re_normalized = tk.Checkbutton(self.frame_right, text=p_text, width=32, anchor="w", variable=self.var_chc_re_normalized, onvalue=1, offvalue=0, command=self.normalized_control )
     self.chc_re_normalized.grid(row=p_row, column=p_column, padx=5, pady=5)
     self.chc_re_normalized.config( font = config.font_checkbox )
+
+  def make_separator(self, p_row=0, p_column=0, p_rowspan=1, p_columnspan=1, p_sticky='nsew'):
+    #Separator frame
+    self.frame_separator = tk.Frame(self.frame_right, borderwidth=2, relief='flat')
+    self.frame_separator.grid(row=p_row, column=p_column, rowspan=p_rowspan, columnspan=p_columnspan, padx=2, pady=5, sticky=p_sticky)
+    #Valid values (Abundance label)
+    self.lbl_abundance = tk.Label(self.frame_separator,text='Separator for master protein accession:', width=30, font=config.font_description)  
+    self.lbl_abundance.grid(row=0, column=0, padx=6, pady=6)
+    #separator Entry
+    self.ntr_separator = tk.Entry(self.frame_separator, width=15, validate="key")
+    self.ntr_separator.insert(0, "; ")
+    self.ntr_separator.grid(row=1, column=0, padx=5, pady=5)
+
 
   #function to choose column in area
   def take_column(self, recipient_listbox):
@@ -650,6 +665,7 @@ class DynamicOrganicCompoundsWindow(tk.Toplevel): #tk.Tk):
   def ultimate_next_window(self):
     #Preapre a dict
     MyUtility.workDict["fill0"] = self.var_chc_fill_zero.get()
+    MyUtility.workDict["master_protein_separator"] = self.ntr_separator.get()
 
     #hide this window
     self.withdraw()
