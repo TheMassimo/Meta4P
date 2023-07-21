@@ -1357,7 +1357,7 @@ class ManageTaxonomicDynamic(Thread):
       df_final[columns_to_fill] = df_final[columns_to_fill].replace('', 'unassigned')
 
     #Add table to dict for aggregation windows
-    MyUtility.workDict['taxonomic_table'] = [col for col in df_final_annotation.columns if col not in ['Accession', 'Sequence']]
+    MyUtility.workDict['taxonomic_table'] = [col for col in df_final_annotation.columns if col not in ['Accession', 'Sequence', 'Accession_2', 'Sequence_2']]
 
     #save edit df in tmp variable
     window.df_tmp = df_final
