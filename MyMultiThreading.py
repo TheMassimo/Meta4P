@@ -1338,8 +1338,12 @@ class ManageTaxonomicDynamic(Thread):
       df_final = df_final.merge(df_final_annotation, left_on='Accession', right_on='Accession_2', how='left')
       df_final.drop(['Accession_2'], inplace=True, axis=1, errors='ignore')
     else:
-      df_final = df_final.merge(df_final_annotation, left_on='Sequence', right_on='Sequence_2', how='left')
-      df_final.drop(['Sequence_2'], inplace=True, axis=1, errors='ignore')
+      if(MyUtility.workDict['taxonomic_match'] == 'protein'):
+        df_final = df_final.merge(df_final_annotation, left_on='Master Protein Accessions', right_on='Accession', how='left')
+        df_final.drop(['Accession'], inplace=True, axis=1, errors='ignore')
+      else: #peptide
+        df_final = df_final.merge(df_final_annotation, left_on='Sequence', right_on='Sequence_2', how='left')
+        df_final.drop(['Sequence_2'], inplace=True, axis=1, errors='ignore')
 
     #control to put zero in empty cells 
     if(MyUtility.workDict['fill0'] == 1):

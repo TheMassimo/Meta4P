@@ -86,7 +86,10 @@ class DynamicTaxonomicWindow(tk.Toplevel): #tk.Tk):
     if(MyUtility.workDict['mode'] == 'Proteins'):
       self.make_proteinAccession(p_row=1, p_column=1, p_sticky='n')
     else:
-      self.make_peptideSequence(p_row=1, p_column=1, p_sticky='n')
+      if(MyUtility.workDict['taxonomic_match'] == 'protein'):
+        self.make_proteinAccession(p_row=1, p_column=1, p_name='Protein Accessions', p_sticky='n')
+      else: #peptide
+        self.make_peptideSequence(p_row=1, p_column=1, p_sticky='n')
 
     self.make_chosenColumns(p_row=2, p_column=1, p_rowspan=1, p_sticky='n')
 
@@ -134,14 +137,14 @@ class DynamicTaxonomicWindow(tk.Toplevel): #tk.Tk):
     self.all_columns_scrollbar.config(command=self.all_columns_listbox.yview)
     self.all_columns_scrollbar.grid(row=0, column=1, sticky="NS")
 
-  def make_proteinAccession(self, p_row=0, p_column=0, p_rowspan=1, p_columnspan=1, p_sticky='nsew'):
+  def make_proteinAccession(self, p_row=0, p_column=0, p_rowspan=1, p_columnspan=1, p_name='', p_sticky='nsew'):
     #protein Accession frame
     self.frame_proteinAccession = tk.Frame(self.frame_centre, borderwidth=2, relief='flat')
     self.frame_proteinAccession.grid(row=p_row, column=p_column, rowspan=p_rowspan, columnspan=p_columnspan, padx=2, pady=2, sticky=p_sticky)
 
     #title of select column area
-    self.lbl_proteinAccession = tk.Label(self.frame_proteinAccession, text='Accession', width=32, font=config.font_subtitle )  
-    self.lbl_proteinAccession.grid(row=0, column=0, columnspan=2, padx=6, pady=6)
+    self.lbl_proteinAccession = tk.Label(self.frame_proteinAccession, text=p_name, width=32, font=config.font_subtitle )  
+    self.lbl_proteinAccession.grid(row=0, column=0, columnspan=2, padx=6, pady=2)
 
     #button select >
     self.btn_take_proteinAccession = tk.Button(self.frame_proteinAccession, text='>', font=config.font_button,
@@ -161,7 +164,7 @@ class DynamicTaxonomicWindow(tk.Toplevel): #tk.Tk):
     #SINGLE, BROWSE, MULTIPLE, EXTENDED
     self.proteinAccession_listbox = Listbox(self.all_proteinAccession, yscrollcommand=self.proteinAccession_scrollbar.set, selectmode=EXTENDED) #background="Blue", fg="white", selectbackground="Red",highlightcolor="Red",
     self.proteinAccession_listbox.grid(row=0, column=0)
-    self.proteinAccession_listbox.config(width=40, height=5)
+    self.proteinAccession_listbox.config(width=40, height=4)
     #configure scrollvar
     self.proteinAccession_scrollbar.config(command=self.proteinAccession_listbox.yview)
     self.proteinAccession_scrollbar.grid(row=0, column=1, sticky="NS")

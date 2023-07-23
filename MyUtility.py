@@ -24,6 +24,7 @@ counts_col               -> 0/1
 taxonomic_mode           -> standard/dynamic
 taxonomic                -> True/False
 taxonomic_table          -> [] #that contains the name of taxonomic columns  
+taxonomic_match          -> protein/peptide
 functional_mode          -> standard/dynamic
 functional               -> True/False
 functional_table         -> [] #that contains the name of functional columns
