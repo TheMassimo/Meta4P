@@ -16,8 +16,8 @@ from tkinter.messagebox import showinfo
 import WindowStandardFunctional as wSF
 import WindowDynamicFunctional as wDF
 
-#if skip go directly to aggregation
-import WindowAggregation as wAg
+#if skip go directly to Summary Metrics Pre
+import WindowSummaryMetricsPre as wSMpr
 
 class FunctionalMenuWindow(tk.Toplevel): #tk.Tk):
     def __init__(self, wn_root, wn_previous, previousDf):
@@ -62,7 +62,7 @@ class FunctionalMenuWindow(tk.Toplevel): #tk.Tk):
         self.btn_previous_step = tk.Button(self, text='← Previous step', font=config.font_button, width=20, command=self.previous_window)
         self.btn_previous_step.grid(row=5, column=0, padx=5, pady=(5,10))
         #Next Step
-        #self.btn_next_step = tk.Button(self, text='Next step →', font=self.config.font_button, width=20,  command=self.next_window)
+        #self.btn_next_step = tk.Button(self, text='Next step →', font=config.font_button, width=20,  command=self.next_window)
         #self.btn_next_step.grid(row=11, column=5, padx=5, pady=5)
 
         #put this window up
@@ -123,4 +123,4 @@ class FunctionalMenuWindow(tk.Toplevel): #tk.Tk):
         #hide this window
         self.withdraw()
         #create new window
-        self.windowAggregation = wAg.AggregationWindow(self.wn_root, self, self.df)
+        self.windowSummaryMetricsPre = wSMpr.SummaryMetricsPreWindow(self.wn_root, self, self.df)

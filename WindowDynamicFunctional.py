@@ -24,7 +24,7 @@ from threading import Thread
 #import loading window
 import WindowLoading as wLd
 #import next window
-import WindowAggregation as wAg
+import WindowSummaryMetricsPre as wSMpr
 
 class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
   def __init__(self, wn_root, wn_previous, previousDf):
@@ -70,7 +70,13 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
                                          width=32, anchor="w", variable=self.var_chc_unassigned, onvalue=1, offvalue=0)
     self.chc_unassigned.grid(row=3, column=0, padx=5, pady=10)
     self.chc_unassigned.config(font = config.font_checkbox )
-
+    #Equate I and L
+    if( (MyUtility.workDict["mode"] != 'Proteins') and (MyUtility.workDict['functional_match'] == 'peptide')):
+      self.var_chc_IandL = IntVar(value=0)
+      self.chc_IandL = tk.Checkbutton(self.frame_left, text='I and L treated as equivalent for annotation',
+                                           width=32, anchor="w", variable=self.var_chc_IandL, onvalue=1, offvalue=0)
+      self.chc_IandL.grid(row=4, column=0, padx=5, pady=10)
+      self.chc_IandL.config(font = config.font_checkbox )
 
     ### centre area ###
     #title frame    
@@ -82,7 +88,7 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
     self.lbl_fileter.grid(row=0, column=0, columnspan=2, padx=6, pady=6, sticky='ew')
 
     #riquadro con le colonne da scegliere
-    self.make_columnsHeaders(p_row=1, p_column=0, p_rowspan=6, p_sticky='n')
+    self.make_columnsHeaders(p_row=1, p_column=0, p_rowspan=7, p_sticky='n')
 
     #primary key use to join
     if(MyUtility.workDict['mode'] == 'Proteins'):
@@ -95,6 +101,9 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
       
     #other columns chose by user
     self.make_chosenColumns(p_row=2, p_column=1, p_rowspan=3, p_sticky='n')
+
+    #column for COG
+    self.make_cog(p_row=5, p_column=1, p_sticky='n')
 
     #columns for KEGG
     self.make_kegg_ko(p_row=1, p_column=2, p_sticky='n')
@@ -140,7 +149,7 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
     #SINGLE, BROWSE, MULTIPLE, EXTENDED
     self.all_columns_listbox = Listbox(self.all_columns_frame, yscrollcommand=self.all_columns_scrollbar.set, selectmode=EXTENDED) #background="Blue", fg="white", selectbackground="Red",highlightcolor="Red",
     self.all_columns_listbox.grid(row=0, column=0)
-    self.all_columns_listbox.config(width=40, height=25)
+    self.all_columns_listbox.config(width=40, height=31)
     #configure scrollvar
     self.all_columns_scrollbar.config(command=self.all_columns_listbox.yview)
     self.all_columns_scrollbar.grid(row=0, column=1, sticky="NS")
@@ -337,6 +346,38 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
     self.kegg_reaction_scrollbar.config(command=self.kegg_reaction_listbox.yview)
     self.kegg_reaction_scrollbar.grid(row=0, column=1, sticky="NS")
 
+  def make_cog(self, p_row=0, p_column=0, p_rowspan=1, p_columnspan=1, p_sticky='nsew'):
+    #kegg_reaction frame
+    self.frame_cog = tk.Frame(self.frame_centre, borderwidth=2, relief='flat')
+    self.frame_cog.grid(row=p_row, column=p_column, rowspan=p_rowspan, columnspan=p_columnspan, padx=2, pady=2, sticky=p_sticky)
+
+    #title of select column area
+    self.lbl_cog = tk.Label(self.frame_cog, text='COG category', width=32, font=config.font_subtitle )  
+    self.lbl_cog.grid(row=0, column=0, columnspan=2, padx=6, pady=2)
+
+    #button select >
+    self.btn_take_cog = tk.Button(self.frame_cog, text='>', font=config.font_button,
+                                               width=2, command=lambda: self.take_column(self.cog_listbox))
+    self.btn_take_cog.grid(row=1, column=0, padx=1, pady=1)
+    #button unselect <
+    self.btn_restore_cog = tk.Button(self.frame_cog, text='<', font=config.font_button,
+                                                  width=2, command=lambda: self.restore_column(self.cog_listbox))
+    self.btn_restore_cog.grid(row=2, column=0, padx=1, pady=1)
+
+    #Create frame and scrollbar
+    self.all_cog = Frame(self.frame_cog)#, bg='red')
+    self.all_cog.grid(row=1, column=1, rowspan=2, padx=1, pady=1)
+    #scrollbar
+    self.cog_scrollbar = Scrollbar(self.all_cog,  orient=VERTICAL)
+    #Listbox
+    #SINGLE, BROWSE, MULTIPLE, EXTENDED
+    self.cog_listbox = Listbox(self.all_cog, yscrollcommand=self.cog_scrollbar.set, selectmode=EXTENDED) #background="Blue", fg="white", selectbackground="Red",highlightcolor="Red",
+    self.cog_listbox.grid(row=0, column=0)
+    self.cog_listbox.config(width=40, height=4)
+    #configure scrollvar
+    self.cog_scrollbar.config(command=self.cog_listbox.yview)
+    self.cog_scrollbar.grid(row=0, column=1, sticky="NS")
+
   def make_chosenColumns(self, p_row=0, p_column=0, p_rowspan=1, p_columnspan=1, p_sticky='nsew'):
     #protein Accession frame
     self.frame_chosenColumns = tk.Frame(self.frame_centre, borderwidth=2, relief='flat')
@@ -369,15 +410,19 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
     self.chosenColumns_scrollbar.config(command=self.chosenColumns_listbox.yview)
     self.chosenColumns_scrollbar.grid(row=0, column=1, sticky="NS")
 
-  def make_kegg_online(self, p_row=0, p_column=0, p_sticky='nsew'):
+  def make_kegg_online(self, p_row=0, p_column=0, p_rowspan=1, p_columnspan=1, p_sticky='nsew'):
+    #protein kegg online frame
+    self.frame_keggOnline = tk.Frame(self.frame_centre, borderwidth=2, relief='flat')
+    self.frame_keggOnline.grid(row=p_row, column=p_column, rowspan=p_rowspan, columnspan=p_columnspan, padx=2, pady=2, sticky=p_sticky)
+
     #Kegg description checkbox
     self.var_chc_kegg_description = IntVar(value=0)
-    self.chc_kegg_description = tk.Checkbutton(self.frame_centre, text='Retrieve KEGG name', width=30, variable=self.var_chc_kegg_description, onvalue=1, offvalue=0)
-    self.chc_kegg_description.grid(row=p_row, column=p_column, padx=5, pady=5, sticky=p_sticky)
+    self.chc_kegg_description = tk.Checkbutton(self.frame_keggOnline, text='Retrieve KEGG name', width=30, variable=self.var_chc_kegg_description, onvalue=1, offvalue=0)
+    self.chc_kegg_description.grid(row=0, column=0, padx=5, pady=5, sticky=p_sticky)
     self.chc_kegg_description.config( font = config.font_checkbox )
     #label description
-    self.lbl_keggOnline = tk.Label(self.frame_centre, text='(working internet connection needed)', width=30, font=config.font_info)  
-    self.lbl_keggOnline.grid(row=p_row+1, column=2, padx=5, pady=(0,10))
+    self.lbl_keggOnline = tk.Label(self.frame_keggOnline, text='(working internet connection needed)', width=30, font=config.font_info)  
+    self.lbl_keggOnline.grid(row=1, column=0, padx=5, pady=(0,10))
 
   def take_column(self, recipient_listbox):
     #Prevent it from putting more than one element in the Protein Accession or Peptide Sequence or sampleID
@@ -388,8 +433,8 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
       proteinOrPeptide = (recipient_listbox == self.peptideSequence_listbox)
     
     if( (proteinOrPeptide) or (recipient_listbox == self.kegg_ko_listbox) or
-        (recipient_listbox == self.kegg_pathway_listbox)     or (recipient_listbox == self.kegg_module_listbox) or
-        (recipient_listbox == self.kegg_reaction_listbox) ):
+        (recipient_listbox == self.kegg_pathway_listbox)  or (recipient_listbox == self.kegg_module_listbox) or
+        (recipient_listbox == self.kegg_reaction_listbox) or (recipient_listbox == self.cog_listbox) ):
       if(len(self.all_columns_listbox.curselection()) > 1):
         tk.messagebox.showerror(parent=self, title="Error", message="Select only 1 item for this area")
         return
@@ -481,6 +526,8 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
       self.kegg_reaction_listbox.delete(0, END)
     if( hasattr(self, 'chosenColumns_listbox') ):
       self.chosenColumns_listbox.delete(0, END)
+    if( hasattr(self, 'cog_listbox') ):
+      self.cog_listbox.delete(0, END)
 
     #if listbox is not empty then clear all
     if self.all_columns_listbox.size() > 0:
@@ -618,16 +665,8 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
     #hide this window
     self.withdraw()
     #create new window
-    self.windowAggregation = wAg.AggregationWindow(self.wn_root, self, self.df_tmp)
+    self.windowSummaryMetricsPre = wSMpr.SummaryMetricsPreWindow(self.wn_root, self, self.df_tmp)
 
-  def skip_window(self):
-    #Edit the previous dict
-    MyUtility.workDict["functional"] = False
-
-    #hide this window
-    self.withdraw()
-    #create new window
-    self.windowAggregation = wAg.AggregationWindow(self.wn_root, self, self.df)
 
 
 '''

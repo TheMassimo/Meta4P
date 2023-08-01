@@ -64,15 +64,23 @@ class StandardTaxonomicWindow(tk.Toplevel): #tk.Tk):
     self.var_chc_unassigned = IntVar(value=0)
     self.chc_unassigned = tk.Checkbutton(self, text='Replace missing values with \'unassigned\'',
                                          width=32, anchor="w", variable=self.var_chc_unassigned, onvalue=1, offvalue=0)
-    self.chc_unassigned.grid(row=3, column=0, columnspan=2, padx=5, pady=(10,20))
+    self.chc_unassigned.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
     self.chc_unassigned.config(font = config.font_checkbox )
+
+    #Equate I and L
+    if( (MyUtility.workDict["mode"] != 'Proteins') and (MyUtility.workDict['taxonomic_match'] == 'peptide')):
+      self.var_chc_IandL = IntVar(value=0)
+      self.chc_IandL = tk.Checkbutton(self, text='I and L treated as equivalent for annotation',
+                                           width=32, anchor="w", variable=self.var_chc_IandL, onvalue=1, offvalue=0)
+      self.chc_IandL.grid(row=4, column=0, columnspan=2, padx=5, pady=(10,20))
+      self.chc_IandL.config(font = config.font_checkbox )
 
     #Previous Step
     self.btn_previous_step = tk.Button(self, text='← Previous step', font=config.font_button, width=22,command=self.previous_window)
-    self.btn_previous_step.grid(row=4, column=0, padx=20, pady=5)
+    self.btn_previous_step.grid(row=5, column=0, padx=20, pady=5)
     #Next Step
     self.btn_next_step = tk.Button(self, text='Next step →', font=config.font_button, width=22,command=self.next_window)
-    self.btn_next_step.grid(row=4, column=1, padx=20, pady=5)
+    self.btn_next_step.grid(row=5, column=1, padx=20, pady=5)
 
     #put this window up
     self.lift()

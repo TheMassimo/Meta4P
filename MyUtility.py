@@ -28,6 +28,7 @@ taxonomic_match          -> protein/peptide
 functional_mode          -> standard/dynamic
 functional               -> True/False
 functional_table         -> [] #that contains the name of functional columns
+functional_to_display    -> [] #that contains the name of functional columns to display
 functional_match         -> protein/peptide
 '''
 workDict = {}

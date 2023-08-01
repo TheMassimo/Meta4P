@@ -24,7 +24,7 @@ from threading import Thread
 #import loading window
 import WindowLoading as wLd
 #import next window
-import WindowAggregation as wAg
+import WindowSummaryMetricsPre as wSMpr
 
 class StandardFunctionalWindow(tk.Toplevel): #tk.Tk):
   def __init__(self, wn_root, wn_previous, previousDf):
@@ -93,6 +93,14 @@ class StandardFunctionalWindow(tk.Toplevel): #tk.Tk):
                                          width=32, anchor="w", variable=self.var_chc_unassigned, onvalue=1, offvalue=0)
     self.chc_unassigned.grid(row=3, column=2, padx=5, pady=5)
     self.chc_unassigned.config(font = config.font_checkbox )
+
+    #Equate I and L
+    if( (MyUtility.workDict["mode"] != 'Proteins') and (MyUtility.workDict['functional_match'] == 'peptide')):
+      self.var_chc_IandL = IntVar(value=0)
+      self.chc_IandL = tk.Checkbutton(self, text='I and L treated as equivalent for annotation',
+                                           width=32, anchor="w", variable=self.var_chc_IandL, onvalue=1, offvalue=0)
+      self.chc_IandL.grid(row=4, column=2, padx=(5,10), pady=(10,20))
+      self.chc_IandL.config(font = config.font_checkbox )
 
     #put this window up
     self.lift()
@@ -280,17 +288,7 @@ class StandardFunctionalWindow(tk.Toplevel): #tk.Tk):
     #hide this window
     self.withdraw()
     #create new window
-    self.windowAggregation = wAg.AggregationWindow(self.wn_root, self, self.df_tmp)
-
-  def skip_window(self):
-    #Edit the previous dict
-    MyUtility.workDict["functional"] = False
-
-    #hide this window
-    self.withdraw()
-    #create new window
-    self.windowAggregation = wAg.AggregationWindow(self.wn_root, self, self.df)
-
+    self.windowSummaryMetricsPre = wSMpr.SummaryMetricsPreWindow(self.wn_root, self, self.df_tmp)
 
 
 
@@ -298,36 +296,4 @@ class StandardFunctionalWindow(tk.Toplevel): #tk.Tk):
 if __name__ == "__main__":
   app = FunctionalWindow()
   app.mainloop()
-'''
-
-
-
-
-
-'''
-df1 = pd.DataFrame({'List' : ['P111', 'P999', 'P111;P999;P777', 'P555', 'P666;P111;P333'],
-               'Color' : ['red', 'red', 'blue','yellow', 'red']})
-df2 = pd.DataFrame({'Cod' : ['P111', 'P222', 'P333', 'P444', 'P555', 'P666', 'P777'],
-               'Animal' : ['DOG', 'CAT', 'BUG','SNAKE,DOG', 'CAT,BUG', 'DOG', 'SNAKE'],
-               'Letter' : ['A,F', 'C', 'S,M', 'F,L', 'C,A','M,C', 'Z,L']})
-print(df1)
-print('')
-print('')
-print(df2)
-print('')
-print('')
-
-df = (df1.assign(Cod = df1['List'].str.split(';'))
-     .explode('Cod')
-     .reset_index()
-     .merge(df2, how='left', on='Cod')
-     .fillna('') #fill with empty space
-     .groupby('index')
-     .agg(List=('List','first'),
-          Color=('Color','first'),
-          Animal=('Animal',';'.join), #put ';' from one to another
-          Letter=('Letter',';'.join))
-     .rename_axis(None))
-
-print (df)
 '''

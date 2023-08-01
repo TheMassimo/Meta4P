@@ -25,7 +25,9 @@ from threading import Thread
 
 #import loading window
 import WindowLoading as wLd
-#import next window
+#import next window (if there is aggregation)
+import WindowSummaryMetricsPost as wSMpst
+#import next window (if there is not aggregation)
 import WindowRenameColumns as wRC
 
 #import prefix and sufix window
@@ -54,24 +56,29 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     self.vcmd = (self.register(self.onValidate), '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
 
     #fixed list to use with proteome
-    if(MyUtility.workDict['taxonomic_mode'] == 'dynamic'):
-      self.list_taxonomic             = MyUtility.workDict['taxonomic_table']
+    #if(MyUtility.workDict['taxonomic_mode'] == 'dynamic'):
+    if 'taxonomic_table' in MyUtility.workDict:
+      self.list_taxonomic = MyUtility.workDict['taxonomic_table']
     else:
-      self.list_taxonomic             = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
+      self.list_taxonomic = []
 
-    if(MyUtility.workDict['functional_mode'] == 'dynamic'):
-      self.list_functional             = MyUtility.workDict['functional_table']
-      self.list_functional_to_display = []
-      for item in self.list_functional:
-        if item.startswith('KEGG'):
-          # sostituisci '_' con uno spazio e converti la parola successiva in minuscolo
-          new_item = ' '.join([s.lower() if i == 1 else s for i, s in enumerate(item.split('_'))])
-        else:
-          new_item = item
-        self.list_functional_to_display.append(new_item)
+    if 'functional_table' in MyUtility.workDict:
+      if(MyUtility.workDict['functional_mode'] == 'dynamic'):
+        self.list_functional             = MyUtility.workDict['functional_table']
+        self.list_functional_to_display = []
+        for item in self.list_functional:
+          if item.startswith('KEGG'):
+            # sostituisci '_' con uno spazio e converti la parola successiva in minuscolo
+            new_item = ' '.join([s.lower() if i == 1 else s for i, s in enumerate(item.split('_'))])
+          else:
+            new_item = item
+          self.list_functional_to_display.append(new_item)
+      else:
+        self.list_functional            = MyUtility.workDict['functional_table'] 
+        self.list_functional_to_display = MyUtility.workDict['functional_to_display']
     else:
-      self.list_functional            = ["COG_category", "GOs", "EC", "KEGG_ko", "KEGG_Pathway", "KEGG_Module", "KEGG_Reaction", "CAZy"]
-      self.list_functional_to_display = ["COG_category", "GOs", "EC", "KEGG KO", "KEGG pathway", "KEGG module", "KEGG reaction", "CAZy"]
+      self.list_functional            = []
+      self.list_functional_to_display = []
     
     ### left area ###
     #Load/download frame
@@ -329,6 +336,7 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
       self.winLoad.destroy()
       #put window in front
       self.lift()
+      #a questo punto avrò anche metrics_df
       if(not thread.fileSaved):
         tk.messagebox.showerror(parent=self, title="Error", message="One or more files not saved\nThey are probably in use by another program")
 
@@ -474,7 +482,7 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
       }
 
       #create thread and start it
-      download_thread = AsyncDownload_Aggregation(self.df, my_list, params, file_path)
+      download_thread = AsyncDownload_Aggregation(self, self.df, my_list, params, file_path)
       download_thread.start()
       self.monitor_download(download_thread)
     else:
@@ -494,8 +502,12 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     #hide this window
     self.withdraw()
 
-    #create new window for renaming
-    self.windowRC = wRC.RenameColumnsWindow(self.wn_root, self)
+    if( hasattr(self, 'metrics_df') and (len(self.create_list()) > 0) ):
+      #create new window for renaming
+      self.windowSummaryMetricsPost = wSMpst.SummaryMetricsPostWindow(self.wn_root, self, self.metrics_df)
+    else:
+      #create new window for renaming
+      self.windowRC = wRC.RenameColumnsWindow(self.wn_root, self)
 
 
 
