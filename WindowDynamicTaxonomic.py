@@ -67,14 +67,14 @@ class DynamicTaxonomicWindow(tk.Toplevel): #tk.Tk):
     #Fill with unassigned
     self.var_chc_unassigned = IntVar(value=0)
     self.chc_unassigned = tk.Checkbutton(self.frame_left, text='Replace missing values with \'unassigned\'',
-                                         width=32, anchor="w", variable=self.var_chc_unassigned, onvalue=1, offvalue=0)
+                                         width=34, anchor="w", variable=self.var_chc_unassigned, onvalue=1, offvalue=0)
     self.chc_unassigned.grid(row=3, column=0, padx=5, pady=10)
     self.chc_unassigned.config(font = config.font_checkbox )
     #Equate I and L
     if( (MyUtility.workDict["mode"] != 'Proteins') and (MyUtility.workDict['taxonomic_match'] == 'peptide')):
       self.var_chc_IandL = IntVar(value=0)
       self.chc_IandL = tk.Checkbutton(self.frame_left, text='I and L treated as equivalent for annotation',
-                                           width=32, anchor="w", variable=self.var_chc_IandL, onvalue=1, offvalue=0)
+                                           width=34, anchor="w", variable=self.var_chc_IandL, onvalue=1, offvalue=0)
       self.chc_IandL.grid(row=4, column=0, padx=5, pady=10)
       self.chc_IandL.config(font = config.font_checkbox )
 
@@ -91,7 +91,7 @@ class DynamicTaxonomicWindow(tk.Toplevel): #tk.Tk):
     self.make_columnsHeaders(p_row=1, p_column=0, p_rowspan=2, p_sticky='n')
 
     if(MyUtility.workDict['mode'] == 'Proteins'):
-      self.make_proteinAccession(p_row=1, p_column=1, p_sticky='n')
+      self.make_proteinAccession(p_row=1, p_column=1, p_name='Protein Accessions', p_sticky='n')
     else:
       if(MyUtility.workDict['taxonomic_match'] == 'protein'):
         self.make_proteinAccession(p_row=1, p_column=1, p_name='Protein Accessions', p_sticky='n')

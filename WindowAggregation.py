@@ -510,7 +510,6 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
       self.windowRC = wRC.RenameColumnsWindow(self.wn_root, self)
 
 
-
 '''
 if __name__ == "__main__":
   app = AggregationWindow()

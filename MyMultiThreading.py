@@ -171,6 +171,7 @@ def manage_kegg_query(self):
     tmp_list = need_df['KEGG_Module'].dropna().unique().tolist()
     #delete everything is not on the list
     self.df_module = self.df_module[self.df_module[0].isin(tmp_list)]
+
   if( hasattr(self, 'query_reaction') ): #category_to_search['KEGG_Reaction']):
     #preapre df
     self.df_reaction = pd.DataFrame()
@@ -1765,13 +1766,21 @@ class ManageFunctional(Thread):
       try:
         #try all download here
         #get online value of KEGG_ko
-        self.query_ko = kegg_list("orthology").read()
+        if window.kegg_ko_listbox.size() > 0:
+          self.query_ko = kegg_list("orthology").read()
+
         #get online value of KEGG_pathway
-        self.query_pathway = kegg_list("pathway").read()
+        if window.kegg_pathway_listbox.size() > 0:
+          self.query_pathway = kegg_list("pathway").read()
+        
         #get online value of KEGG_module
-        self.query_module = kegg_list("module").read()
+        if window.kegg_module_listbox.size() > 0:
+          self.query_module = kegg_list("module").read()
+        
         #get online value of KEGG_reaction
-        self.query_reaction = kegg_list("reaction").read()
+        if window.kegg_reaction_listbox.size() > 0:
+          self.query_reaction = kegg_list("reaction").read()
+
       except Exception as e:
         #print("===>>" + str(e))
         self.internetWork = False
@@ -1784,57 +1793,61 @@ class ManageFunctional(Thread):
 
       #add extra column with description of kegg name
       ### KEGG KO ###
-      position_to_insert = df_final.columns.get_loc("KEGG_ko")+1
-      #crearte a new empty column
-      df_final.insert(loc=position_to_insert, column="KO name", value=['' for i in range(df_final.shape[0])])
-      #rename to use
-      self.df_ko.rename(columns={0:'Name', 1:'Description'}, inplace=True)
-      #mapper
-      mapper = self.df_ko.set_index('Name')['Description'].to_dict()
-      regex = '|'.join(self.df_ko['Name'])
-      # 'ko:123|ko:111|ko:222|ko:333|ko:444|ko:555'
-      df_final['KO name'] = df_final['KEGG_ko'].str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
+      if( hasattr(self, 'query_ko') ):
+        position_to_insert = df_final.columns.get_loc("KEGG_ko")+1
+        #crearte a new empty column
+        df_final.insert(loc=position_to_insert, column="KO name", value=['' for i in range(df_final.shape[0])])
+        #rename to use
+        self.df_ko.rename(columns={0:'Name', 1:'Description'}, inplace=True)
+        #mapper
+        mapper = self.df_ko.set_index('Name')['Description'].to_dict()
+        regex = '|'.join(self.df_ko['Name'])
+        # 'ko:123|ko:111|ko:222|ko:333|ko:444|ko:555'
+        df_final['KO name'] = df_final['KEGG_ko'].str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
 
       ### KEGG Pathway ###
-      #get position for new column
-      position_to_insert = df_final.columns.get_loc("KEGG_Pathway")+1
-      #crearte a new empty column
-      df_final.insert(loc=position_to_insert, column="Pathway name", value=['' for i in range(df_final.shape[0])])
-      #rename to use
-      self.df_pathway.rename(columns={0:'Name', 1:'Description'}, inplace=True)
-      #mapper
-      mapper = self.df_pathway.set_index('Name')['Description'].to_dict()
-      regex = '|'.join(self.df_pathway['Name'])
-      # 'ko:123|ko:111|ko:222|ko:333|ko:444|ko:555'
-      df_final['Pathway name'] = df_final['KEGG_Pathway'].str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
+      if( hasattr(self, 'query_pathway') ):
+        #get position for new column
+        position_to_insert = df_final.columns.get_loc("KEGG_Pathway")+1
+        #crearte a new empty column
+        df_final.insert(loc=position_to_insert, column="Pathway name", value=['' for i in range(df_final.shape[0])])
+        #rename to use
+        self.df_pathway.rename(columns={0:'Name', 1:'Description'}, inplace=True)
+        #mapper
+        mapper = self.df_pathway.set_index('Name')['Description'].to_dict()
+        regex = '|'.join(self.df_pathway['Name'])
+        # 'ko:123|ko:111|ko:222|ko:333|ko:444|ko:555'
+        df_final['Pathway name'] = df_final['KEGG_Pathway'].str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
 
       ### KEGG Module ###
-      #get position for new column
-      position_to_insert = df_final.columns.get_loc("KEGG_Module")+1
-      #crearte a new empty column
-      df_final.insert(loc=position_to_insert, column="Module name", value=['' for i in range(df_final.shape[0])])
-      #rename to use
-      self.df_module.rename(columns={0:'Name', 1:'Description'}, inplace=True)
-      #mapper
-      mapper = self.df_module.set_index('Name')['Description'].to_dict()
-      regex = '|'.join(self.df_module['Name'])
-      # 'ko:123|ko:111|ko:222|ko:333|ko:444|ko:555'
-      #df_final['Module name'] = df_final['KEGG_Module'].str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
-      df_final['Module name'] = df_final['KEGG_Module'].str.replace(',', '|', regex=False).str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
+      if( hasattr(self, 'query_module') ):
+        #get position for new column
+        position_to_insert = df_final.columns.get_loc("KEGG_Module")+1
+        #crearte a new empty column
+        df_final.insert(loc=position_to_insert, column="Module name", value=['' for i in range(df_final.shape[0])])
+        #rename to use
+        self.df_module.rename(columns={0:'Name', 1:'Description'}, inplace=True)
+        #mapper
+        mapper = self.df_module.set_index('Name')['Description'].to_dict()
+        regex = '|'.join(self.df_module['Name'])
+        # 'ko:123|ko:111|ko:222|ko:333|ko:444|ko:555'
+        #df_final['Module name'] = df_final['KEGG_Module'].str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
+        df_final['Module name'] = df_final['KEGG_Module'].str.replace(',', '|', regex=False).str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
 
       ### KEGG Reaction ###
-      #get position for new column
-      position_to_insert = df_final.columns.get_loc("KEGG_Reaction")+1
-      #crearte a new empty column
-      df_final.insert(loc=position_to_insert, column="Reaction name", value=['' for i in range(df_final.shape[0])])
-      #rename to use
-      self.df_reaction.rename(columns={0:'Name', 1:'Description'}, inplace=True)
-      #mapper
-      mapper = self.df_reaction.set_index('Name')['Description'].to_dict()
-      regex = '|'.join(self.df_reaction['Name'])
-      # 'ko:123|ko:111|ko:222|ko:333|ko:444|ko:555'
-      #df_final['Reaction name'] = df_final['KEGG_Reaction'].str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
-      df_final['Reaction name'] = df_final['KEGG_Reaction'].str.replace(';', '|', regex=False).str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
+      if( hasattr(self, 'query_reaction') ):
+        #get position for new column
+        position_to_insert = df_final.columns.get_loc("KEGG_Reaction")+1
+        #crearte a new empty column
+        df_final.insert(loc=position_to_insert, column="Reaction name", value=['' for i in range(df_final.shape[0])])
+        #rename to use
+        self.df_reaction.rename(columns={0:'Name', 1:'Description'}, inplace=True)
+        #mapper
+        mapper = self.df_reaction.set_index('Name')['Description'].to_dict()
+        regex = '|'.join(self.df_reaction['Name'])
+        # 'ko:123|ko:111|ko:222|ko:333|ko:444|ko:555'
+        #df_final['Reaction name'] = df_final['KEGG_Reaction'].str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
+        df_final['Reaction name'] = df_final['KEGG_Reaction'].str.replace(';', '|', regex=False).str.replace(regex, lambda m: mapper.get(m.group()), regex=True)
 
     #add description to COG column if exist
     if 'COG_category' in df_final.columns:
