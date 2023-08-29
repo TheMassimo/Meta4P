@@ -34,16 +34,21 @@ class SummaryMetricsPostWindow(tk.Toplevel): #tk.Tk):
         # configure the root window
         self.title('SummaryMetrics') #Meta Protein Annotation Aggregation
 
+    
+        #label template
+        self.lbl_loadedFile = tk.Label(self, text='Metrics are calculated based on the\npreviously downloaded aggregated tables',width=32,font=config.font_description)
+        self.lbl_loadedFile.grid(row=0, column=0, columnspan=2, padx=5, pady=5)
+
         #Download button
-        self.btn_download_metrics = tk.Button(self, text="Download annotation metrics", font=config.font_button, width=30,command=self.download)
-        self.btn_download_metrics.grid(row=0, column=0, columnspan=2, padx=5, pady=(30,10))
+        self.btn_download_metrics = tk.Button(self, text="Download annotation metrics", font=config.font_button, width=32,command=self.download)
+        self.btn_download_metrics.grid(row=1, column=0, columnspan=2, padx=5, pady=(30,10))
 
         #Previous Step
         self.btn_previous_step = tk.Button(self, text='← Previous step', font=config.font_button, width=20, command=self.previous_window)
-        self.btn_previous_step.grid(row=1, column=0, padx=5, pady=(5,10))
+        self.btn_previous_step.grid(row=2, column=0, padx=5, pady=(5,10))
         #Next Step
         self.btn_next_step = tk.Button(self, text='Next step →', font=config.font_button, width=20,  command=self.next_window)
-        self.btn_next_step.grid(row=1, column=1, padx=5, pady=(5,10))
+        self.btn_next_step.grid(row=2, column=1, padx=5, pady=(5,10))
 
         #put this window up
         self.lift()

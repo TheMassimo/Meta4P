@@ -665,7 +665,8 @@ class DynamicOrganicCompoundsWindow(tk.Toplevel): #tk.Tk):
   def ultimate_next_window(self):
     #Preapre a dict
     MyUtility.workDict["fill0"] = self.var_chc_fill_zero.get()
-    MyUtility.workDict["master_protein_separator"] = self.ntr_separator.get()
+    if hasattr(self, 'ntr_separator'):
+      MyUtility.workDict["master_protein_separator"] = self.ntr_separator.get()
 
     #hide this window
     self.withdraw()
