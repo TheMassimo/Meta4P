@@ -6,14 +6,9 @@ from tkinter import *
 import WindowMenu as wMn
 
 
-
-
-import pandas as pd
-
-
-
-
 # crea window menu
 windowMenu = wMn.MenuWindow()
 #pass main loop NOT REMOVE THIS!!!
 windowMenu.mainloop()
+
+print("ciao")
