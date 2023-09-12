@@ -368,20 +368,24 @@ class ManageSummaryMetricsPre(Thread):
     dfs_to_concat_sum = []
 
     ##get correct input type
-    input_type = ""
+    column_count_text = ""
+    column_total_text = ""
     if(MyUtility.workDict["mode"] == "Proteins"):
-      input_type = "proteins"
+      column_count_text = "Quantified proteins"
+      column_total_text = "Total abundance"
     elif(MyUtility.workDict["mode"] == "Peptides"):
-        input_type = "peptides"
+        column_count_text = "Quantified peptides"
+        column_total_text = "Total abundance"
     else:
-        input_type = "PSM"
+        column_count_text = "Identified peptides"
+        column_total_text = "Total PSMs"
 
     ##### Quantified proteins #####
     ### Count ###
     # Calcolo il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x'
     count_vals = window.df[abundance_set].gt(0).sum()
     # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-    new_row = {'Metrics': 'Quantified '+input_type}
+    new_row = {'Metrics': column_count_text}
     new_row.update(count_vals.to_dict())
     # Aggiungo la nuova riga al DataFrame 'new_df'
     tmp_df = pd.DataFrame(new_row, index=[0])
@@ -391,7 +395,7 @@ class ManageSummaryMetricsPre(Thread):
     # Calcolo la somma di valori > 0 e diversi da NaN per ogni colonna 'val_x'
     count_vals = window.df[abundance_set].sum()
     # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-    new_row = {'Metrics': 'Total abundance'}
+    new_row = {'Metrics': column_total_text}
     new_row.update(count_vals.to_dict())
     # Aggiungo la nuova riga al DataFrame 'new_df'
     tmp_df = pd.DataFrame(new_row, index=[0])
@@ -401,6 +405,7 @@ class ManageSummaryMetricsPre(Thread):
     ##### Marked as #####
     if 'Marked as' in window.df.columns:
       # Ottenere un array degli elementi unici nella colonna 'maked as'
+      window.df['Marked as'] = window.df['Marked as'].astype(str)
       unique_markedas = sorted(window.df['Marked as'].unique())
       # Iterare sugli elementi unici
       for element in unique_markedas:
@@ -412,7 +417,7 @@ class ManageSummaryMetricsPre(Thread):
         count_vals = filtered_df[abundance_set].gt(0).sum()
 
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-        new_row = {'Metrics': 'Quantified '+input_type+' - ' + element}
+        new_row = {'Metrics': column_count_text+' - ' + element}
         new_row.update(count_vals.to_dict())
 
         # Creare un DataFrame con la riga corrente
@@ -426,7 +431,7 @@ class ManageSummaryMetricsPre(Thread):
         count_vals = filtered_df[abundance_set].sum()
 
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-        new_row = {'Metrics': 'Total abundance - ' + element}
+        new_row = {'Metrics': column_total_text+' - ' + element}
         new_row.update(count_vals.to_dict())
 
         # Creare un DataFrame con la riga corrente
@@ -446,7 +451,7 @@ class ManageSummaryMetricsPre(Thread):
         count_vals = filtered_df[abundance_set].gt(0).sum()
 
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-        new_row = {'Metrics': 'Quantified '+input_type+' - ' + column}
+        new_row = {'Metrics': column_count_text+' - ' + column}
         new_row.update(count_vals.to_dict())
 
         # Creare un DataFrame con la riga corrente
@@ -460,7 +465,7 @@ class ManageSummaryMetricsPre(Thread):
         count_vals = filtered_df[abundance_set].sum()
 
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-        new_row = {'Metrics': 'Total abundance - ' + column}
+        new_row = {'Metrics': column_total_text+' - ' + column}
         new_row.update(count_vals.to_dict())
 
         # Creare un DataFrame con la riga corrente
@@ -480,7 +485,7 @@ class ManageSummaryMetricsPre(Thread):
         count_vals = filtered_df[abundance_set].gt(0).sum()
 
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-        new_row = {'Metrics': 'Quantified '+input_type+' - ' + column}
+        new_row = {'Metrics': column_count_text+' - ' + column}
         new_row.update(count_vals.to_dict())
 
         # Creare un DataFrame con la riga corrente
@@ -494,7 +499,7 @@ class ManageSummaryMetricsPre(Thread):
         count_vals = filtered_df[abundance_set].sum()
 
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-        new_row = {'Metrics': 'Total abundance - ' + column}
+        new_row = {'Metrics': column_total_text+' - ' + column}
         new_row.update(count_vals.to_dict())
 
         # Creare un DataFrame con la riga corrente
@@ -911,11 +916,25 @@ class AsyncDownload_Aggregation(Thread):
         #take cols name
         thisName = element[0] +" + "+ element[1]
 
+
+      ##get correct input type for count e total (summary files)
+      column_count_text = ""
+      column_total_text = ""
+      if(MyUtility.workDict["mode"] == "Proteins"):
+        column_count_text = "Quantified"
+        column_total_text = "Total abundance"
+      elif(MyUtility.workDict["mode"] == "Peptides"):
+          column_count_text = "Quantified"
+          column_total_text = "Total abundance"
+      else:
+          column_count_text = "Identified"
+          column_total_text = "Total PSMs"
+
       # Count #
       # Calcolo il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x'
       count_vals = df_tmp[abundance_set].gt(0).sum()
       # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-      new_row = {'Metrics': 'Quantified: '+thisName}
+      new_row = {'Metrics': column_count_text+': '+thisName}
       new_row.update(count_vals.to_dict())
       # Aggiungo la nuova riga al DataFrame 'new_df'
       tmp_df = pd.DataFrame(new_row, index=[0])
@@ -925,7 +944,7 @@ class AsyncDownload_Aggregation(Thread):
       # Calcolo la somma di valori > 0 e diversi da NaN per ogni colonna 'val_x'
       count_vals = df_tmp[abundance_set].sum()
       # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-      new_row = {'Metrics': 'Total abundance: '+thisName}
+      new_row = {'Metrics': column_total_text+': '+thisName}
       new_row.update(count_vals.to_dict())
       # Aggiungo la nuova riga al DataFrame 'new_df'
       tmp_df = pd.DataFrame(new_row, index=[0])
@@ -977,9 +996,9 @@ class AsyncDownload_Aggregation(Thread):
       #Riordino le metriche ponendo prima tutti i quantified e poi tutti i total abundance
       # Definisci una funzione per ottenere l'ordine delle metriche
       def get_order(metric):
-        if 'Quantified' in metric:
+        if column_count_text in metric:
           return 0
-        elif 'Total abundance' in metric:
+        elif column_total_text in metric:
           return 1
         else:
           return 2  # Se ci sono altre metriche, vengono posizionate alla fine
