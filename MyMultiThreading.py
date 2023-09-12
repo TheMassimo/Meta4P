@@ -367,12 +367,21 @@ class ManageSummaryMetricsPre(Thread):
     dfs_to_concat_count = []
     dfs_to_concat_sum = []
 
+    ##get correct input type
+    input_type = ""
+    if(MyUtility.workDict["mode"] == "Proteins"):
+      input_type = "proteins"
+    elif(MyUtility.workDict["mode"] == "Peptides"):
+        input_type = "peptides"
+    else:
+        input_type = "PSM"
+
     ##### Quantified proteins #####
     ### Count ###
     # Calcolo il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x'
     count_vals = window.df[abundance_set].gt(0).sum()
     # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-    new_row = {'Metrics': 'Quantified proteins'}
+    new_row = {'Metrics': 'Quantified '+input_type}
     new_row.update(count_vals.to_dict())
     # Aggiungo la nuova riga al DataFrame 'new_df'
     tmp_df = pd.DataFrame(new_row, index=[0])
@@ -390,40 +399,41 @@ class ManageSummaryMetricsPre(Thread):
     dfs_to_concat_sum.append(tmp_df)
     
     ##### Marked as #####
-    # Ottenere un array degli elementi unici nella colonna 'maked as'
-    unique_markedas = sorted(window.df['Marked as'].unique())
-    # Iterare sugli elementi unici
-    for element in unique_markedas:
-      # Filtrare il DataFrame per includere solo le righe in cui 'Marked as' è uguale a 'element'
-      filtered_df = window.df[window.df['Marked as'] == element]
+    if 'Marked as' in window.df.columns:
+      # Ottenere un array degli elementi unici nella colonna 'maked as'
+      unique_markedas = sorted(window.df['Marked as'].unique())
+      # Iterare sugli elementi unici
+      for element in unique_markedas:
+        # Filtrare il DataFrame per includere solo le righe in cui 'Marked as' è uguale a 'element'
+        filtered_df = window.df[window.df['Marked as'] == element]
 
-      ### Count ###
-      # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
-      count_vals = filtered_df[abundance_set].gt(0).sum()
+        ### Count ###
+        # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
+        count_vals = filtered_df[abundance_set].gt(0).sum()
 
-      # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-      new_row = {'Metrics': 'Quantified proteins - ' + element}
-      new_row.update(count_vals.to_dict())
+        # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
+        new_row = {'Metrics': 'Quantified '+input_type+' - ' + element}
+        new_row.update(count_vals.to_dict())
 
-      # Creare un DataFrame con la riga corrente
-      tmp_df = pd.DataFrame(new_row, index=[0])
+        # Creare un DataFrame con la riga corrente
+        tmp_df = pd.DataFrame(new_row, index=[0])
 
-      # Aggiungere il DataFrame corrente alla lista di DataFrame da concatenare
-      dfs_to_concat_count.append(tmp_df)
+        # Aggiungere il DataFrame corrente alla lista di DataFrame da concatenare
+        dfs_to_concat_count.append(tmp_df)
 
-      ### Sum ###
-      # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
-      count_vals = filtered_df[abundance_set].sum()
+        ### Sum ###
+        # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
+        count_vals = filtered_df[abundance_set].sum()
 
-      # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-      new_row = {'Metrics': 'Total abundance - ' + element}
-      new_row.update(count_vals.to_dict())
+        # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
+        new_row = {'Metrics': 'Total abundance - ' + element}
+        new_row.update(count_vals.to_dict())
 
-      # Creare un DataFrame con la riga corrente
-      tmp_df = pd.DataFrame(new_row, index=[0])
+        # Creare un DataFrame con la riga corrente
+        tmp_df = pd.DataFrame(new_row, index=[0])
 
-      # Aggiungere il DataFrame corrente alla lista di DataFrame da concatenare
-      dfs_to_concat_sum.append(tmp_df)
+        # Aggiungere il DataFrame corrente alla lista di DataFrame da concatenare
+        dfs_to_concat_sum.append(tmp_df)
 
     ##### Count taxonomic count #####
     if 'taxonomic_table' in MyUtility.workDict:
@@ -436,7 +446,7 @@ class ManageSummaryMetricsPre(Thread):
         count_vals = filtered_df[abundance_set].gt(0).sum()
 
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-        new_row = {'Metrics': 'Quantified proteins - ' + column}
+        new_row = {'Metrics': 'Quantified '+input_type+' - ' + column}
         new_row.update(count_vals.to_dict())
 
         # Creare un DataFrame con la riga corrente
@@ -470,7 +480,7 @@ class ManageSummaryMetricsPre(Thread):
         count_vals = filtered_df[abundance_set].gt(0).sum()
 
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-        new_row = {'Metrics': 'Quantified proteins - ' + column}
+        new_row = {'Metrics': 'Quantified '+input_type+' - ' + column}
         new_row.update(count_vals.to_dict())
 
         # Creare un DataFrame con la riga corrente
@@ -905,7 +915,7 @@ class AsyncDownload_Aggregation(Thread):
       # Calcolo il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x'
       count_vals = df_tmp[abundance_set].gt(0).sum()
       # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-      new_row = {'Metrics': 'Quantified proteins: '+thisName}
+      new_row = {'Metrics': 'Quantified: '+thisName}
       new_row.update(count_vals.to_dict())
       # Aggiungo la nuova riga al DataFrame 'new_df'
       tmp_df = pd.DataFrame(new_row, index=[0])
@@ -963,6 +973,23 @@ class AsyncDownload_Aggregation(Thread):
     if(len(dfs_to_concat) > 0):
       # Concatenare tutti i DataFrame nella lista in un unico DataFrame
       metrics_df = pd.concat(dfs_to_concat, ignore_index=True)
+
+      #Riordino le metriche ponendo prima tutti i quantified e poi tutti i total abundance
+      # Definisci una funzione per ottenere l'ordine delle metriche
+      def get_order(metric):
+        if 'Quantified' in metric:
+          return 0
+        elif 'Total abundance' in metric:
+          return 1
+        else:
+          return 2  # Se ci sono altre metriche, vengono posizionate alla fine
+
+      # Ordina il DataFrame utilizzando la funzione get_order
+      metrics_df['Order'] = metrics_df['Metrics'].apply(get_order)
+      metrics_df = metrics_df.sort_values(by=['Order', 'Metrics']).drop('Order', axis=1)
+
+      # Resetta gli indici del DataFrame
+      metrics_df = metrics_df.reset_index(drop=True)
 
       #save df in window
       self.window.metrics_df = metrics_df
@@ -1758,6 +1785,7 @@ class ManageFunctional(Thread):
     if 'KEGG_ko' in df_final.columns:
       df_final['KEGG_ko'] = df_final['KEGG_ko'].str.replace('ko:', '')
 
+
     #Control to get KEGG data
     if(window.var_chc_kegg_description.get() == 1):
       #Variable to monitorize internet work
@@ -1765,26 +1793,34 @@ class ManageFunctional(Thread):
       #check if is possible get online value of kegg value
       try:
         #try all download here
-        #get online value of KEGG_ko
-        if window.kegg_ko_listbox.size() > 0:
+        if(MyUtility.workDict['functional_mode'] == 'dynamic'):
+          #get online value of KEGG_ko
+          if window.kegg_ko_listbox.size() > 0:
+            self.query_ko = kegg_list("orthology").read()
+          #get online value of KEGG_pathway
+          if window.kegg_pathway_listbox.size() > 0:
+            self.query_pathway = kegg_list("pathway").read()
+          #get online value of KEGG_module
+          if window.kegg_module_listbox.size() > 0:
+            self.query_module = kegg_list("module").read()
+          #get online value of KEGG_reaction
+          if window.kegg_reaction_listbox.size() > 0:
+            self.query_reaction = kegg_list("reaction").read()
+        else:
+          #get online value of KEGG_ko
           self.query_ko = kegg_list("orthology").read()
-
-        #get online value of KEGG_pathway
-        if window.kegg_pathway_listbox.size() > 0:
+          #get online value of KEGG_pathway
           self.query_pathway = kegg_list("pathway").read()
-        
-        #get online value of KEGG_module
-        if window.kegg_module_listbox.size() > 0:
+          #get online value of KEGG_module
           self.query_module = kegg_list("module").read()
-        
-        #get online value of KEGG_reaction
-        if window.kegg_reaction_listbox.size() > 0:
+          #get online value of KEGG_reaction
           self.query_reaction = kegg_list("reaction").read()
 
       except Exception as e:
         #print("===>>" + str(e))
         self.internetWork = False
         return
+
 
       #save local df copy
       self.df = df_final
