@@ -1723,11 +1723,11 @@ class ManageFunctional(Thread):
       existing_columns = [col for col in useless_column if col in df_final_annotation.columns]
       df_final_annotation = df_final_annotation.drop(existing_columns, axis=1)
 
-    #If the dog column is present inside the dataframe, I separate all the letters inside it with a comma
+    #If the cog column is present inside the dataframe, I separate all the letters inside it with a comma
     if 'COG_category' in df_final_annotation.columns:
       # Applying the function to strings with more than one character
       df_final_annotation['COG_category'] = np.where(df_final_annotation['COG_category'].str.len() > 1,
-                                 df_final_annotation['COG_category'].str.replace('', ',').str[1:-1],
+                                 df_final_annotation['COG_category'].str.replace('', ',').str[1:-1], #avendo le virgole le rimuovo
                                  df_final_annotation['COG_category'])
       # Finding single-character strings
       single_char_mask = df_final_annotation['COG_category'].str.len() == 1
@@ -1910,8 +1910,14 @@ class ManageFunctional(Thread):
       position_to_insert = df_final.columns.get_loc("COG_category")+1
       #crearte a new empty column
       df_final.insert(loc=position_to_insert, column="COG name", value=['' for i in range(df_final.shape[0])])
-      # Creare la nuova colonna "COG_name" utilizzando il metodo map per ottenere i valori dal dizionario
-      df_final['COG name'] = df_final['COG_category'].map(COG_dict)
+      # Funzione per mappare le lettere ai nomi usando il dizionario
+      def map_letters_to_cog_names(letters):
+          letter_list = letters.split(',')
+          names = [COG_dict[letter] for letter in letter_list if letter in COG_dict]
+          return ';'.join(names)
+      # Applica la funzione alla colonna 'lettere' e assegna il risultato alla colonna 'nomi'
+      df_final['COG name'] = df_final['COG_category'].apply(map_letters_to_cog_names)
+
 
     #replace empty cell with "unassigned"
     #check if fill empty cells in annotation
