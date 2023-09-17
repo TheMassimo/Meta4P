@@ -829,6 +829,8 @@ class AsyncDownload_Aggregation(Thread):
           if(self.params["sup_tab"]):
             df_tmp_sup.insert(loc=position_to_insert, column="KO name", value=df_tmp["KO name"])
 
+
+
         elif( (col_name_2 == "KEGG_Pathway") and (category_to_search['KEGG_Pathway']) ):
           #get position for new column
           position_to_insert = df_tmp.columns.get_loc("KEGG_Pathway")+1
@@ -1734,6 +1736,7 @@ class ManageFunctional(Thread):
       # Replacing single-character strings with the original value
       df_final_annotation.loc[single_char_mask, 'COG_category'] = df_final_annotation.loc[single_char_mask, 'COG_category'].str[0]
 
+
     #if it is necessary to rename the columns to avoid that in the main
     #df and inn the one with the ci notations there are duplicates
     rename_dict = {col: col+'_2' for col in df_final_annotation.columns if col in df_final.columns}
@@ -1804,6 +1807,15 @@ class ManageFunctional(Thread):
     if 'KEGG_ko' in df_final.columns:
       df_final['KEGG_ko'] = df_final['KEGG_ko'].str.replace('ko:', '')
 
+    #replace empty cell with "unassigned"
+    #check if fill empty cells in annotation
+    if(window.var_chc_unassigned.get() == 1):
+      # Verifica la presenza delle colonne di interesse nel DataFrame
+      all_columns_to_fill = df_final_annotation.columns.tolist()
+      columns_to_fill = [col for col in all_columns_to_fill if col in df_final.columns.tolist()]
+      df_final[columns_to_fill] = df_final[columns_to_fill].fillna(value='unassigned')
+      # Sostituisci le stringhe vuote ('') con "unassigned" nelle colonne di interesse
+      df_final[columns_to_fill] = df_final[columns_to_fill].replace('', 'unassigned')
 
     #Control to get KEGG data
     if(window.var_chc_kegg_description.get() == 1):
@@ -1917,17 +1929,11 @@ class ManageFunctional(Thread):
           return ';'.join(names)
       # Applica la funzione alla colonna 'lettere' e assegna il risultato alla colonna 'nomi'
       df_final['COG name'] = df_final['COG_category'].apply(map_letters_to_cog_names)
+      if(window.var_chc_unassigned.get() == 1):
+        # Sostituisci le stringhe vuote ('') con "unassigned" nelle colonne di interesse
+        df_final['COG name'] = df_final['COG name'].replace('', 'unassigned')
 
 
-    #replace empty cell with "unassigned"
-    #check if fill empty cells in annotation
-    if(window.var_chc_unassigned.get() == 1):
-      # Verifica la presenza delle colonne di interesse nel DataFrame
-      all_columns_to_fill = df_final_annotation.columns.tolist()
-      columns_to_fill = [col for col in all_columns_to_fill if col in df_final.columns.tolist()]
-      df_final[columns_to_fill] = df_final[columns_to_fill].fillna(value='unassigned')
-      # Sostituisci le stringhe vuote ('') con "unassigned" nelle colonne di interesse
-      df_final[columns_to_fill] = df_final[columns_to_fill].replace('', 'unassigned')
 
     #Add table to dict for aggregation windows
     if(MyUtility.workDict['functional_mode'] == 'dynamic'):
