@@ -829,8 +829,6 @@ class AsyncDownload_Aggregation(Thread):
           if(self.params["sup_tab"]):
             df_tmp_sup.insert(loc=position_to_insert, column="KO name", value=df_tmp["KO name"])
 
-
-
         elif( (col_name_2 == "KEGG_Pathway") and (category_to_search['KEGG_Pathway']) ):
           #get position for new column
           position_to_insert = df_tmp.columns.get_loc("KEGG_Pathway")+1
@@ -932,9 +930,13 @@ class AsyncDownload_Aggregation(Thread):
           column_count_text = "Identified"
           column_total_text = "Total PSMs"
 
-      # Count #
-      # Calcolo il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x'
-      count_vals = df_tmp[abundance_set].gt(0).sum()
+
+
+      # Funzione per calcolare il numero di valori > 0 e diversi da NaN
+      def count_positive_notnan(column):
+          return (column.gt(0) & ~column.isna()).sum()
+      # Calcola il numero di valori per ciascuna colonna
+      count_vals = df_tmp[abundance_set].apply(count_positive_notnan)
       # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
       new_row = {'Metrics': column_count_text+': '+thisName}
       new_row.update(count_vals.to_dict())
@@ -942,9 +944,13 @@ class AsyncDownload_Aggregation(Thread):
       tmp_df = pd.DataFrame(new_row, index=[0])
       #aggiungo al vettore dei risultati
       dfs_to_concat.append(tmp_df)
-      # Sum #
-      # Calcolo la somma di valori > 0 e diversi da NaN per ogni colonna 'val_x'
-      count_vals = df_tmp[abundance_set].sum()
+
+      # SUM #
+      # Funzione per calcolare la somma dei valori > 0 e diversi da NaN
+      def sum_positive_notnan(column):
+          return column[(column > 0) & (~column.isna())].sum()
+      # Calcola la somma per ciascuna colonna
+      count_vals = df_tmp[abundance_set].apply(sum_positive_notnan)
       # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
       new_row = {'Metrics': column_total_text+': '+thisName}
       new_row.update(count_vals.to_dict())
@@ -1922,16 +1928,20 @@ class ManageFunctional(Thread):
       position_to_insert = df_final.columns.get_loc("COG_category")+1
       #crearte a new empty column
       df_final.insert(loc=position_to_insert, column="COG name", value=['' for i in range(df_final.shape[0])])
-      # Funzione per mappare le lettere ai nomi usando il dizionario
-      def map_letters_to_cog_names(letters):
-          letter_list = letters.split(',')
-          names = [COG_dict[letter] for letter in letter_list if letter in COG_dict]
-          return ';'.join(names)
-      # Applica la funzione alla colonna 'lettere' e assegna il risultato alla colonna 'nomi'
-      df_final['COG name'] = df_final['COG_category'].apply(map_letters_to_cog_names)
-      if(window.var_chc_unassigned.get() == 1):
-        # Sostituisci le stringhe vuote ('') con "unassigned" nelle colonne di interesse
-        df_final['COG name'] = df_final['COG name'].replace('', 'unassigned')
+      # Funzione per ottenere la descrizione in base alle lettere
+      def get_description(lettere):
+          lettere = lettere.split(';')
+          descrizioni_lista = []
+
+          for gruppo in lettere:
+              lettere_gruppo = gruppo.split(',')
+              descrizioni_gruppo = [COG_dict.get(lettera, 'unassigned') for lettera in lettere_gruppo]
+              descrizioni_lista.append(','.join(descrizioni_gruppo))
+
+          return ';'.join(descrizioni_lista)
+
+      # Applicare la funzione al DataFrame
+      df_final['COG name'] = df_final['COG_category'].apply(get_description)
 
 
 

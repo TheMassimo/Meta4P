@@ -38,13 +38,13 @@ class SummaryMetricsPreWindow(tk.Toplevel): #tk.Tk):
         button_name = ""
         if(MyUtility.workDict["mode"] == "Proteins"):
             button_name = "Download protein metrics"
-            self.defaultDwName = "Summary protein metrics.xlsx"
+            self.defaultDwName = "protein metrics.xlsx"
         elif(MyUtility.workDict["mode"] == "Peptides"):
             button_name = "Download peptide metrics"
-            self.defaultDwName = "Summary peptide metrics.xlsx"
+            self.defaultDwName = "peptide metrics.xlsx"
         else:
             button_name = "Download PSM metrics"
-            self.defaultDwName = "Summary PSM metrics.xlsx"
+            self.defaultDwName = "PSM metrics.xlsx"
 
         #Download button
         self.btn_download_metrics = tk.Button(self, text=button_name, font=config.font_button, width=30,command=self.download)
