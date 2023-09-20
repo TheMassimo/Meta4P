@@ -1783,6 +1783,7 @@ class ManageFunctional(Thread):
       else: #peptide
         columns_to_match = 'Sequence'
 
+
     #join final_df and annotation_df
     df_final = (df_final.assign(query = df_final[columns_to_match].str.split('; '))
              .explode('query')
@@ -1794,8 +1795,32 @@ class ManageFunctional(Thread):
              .agg({**dict.fromkeys(df_final, 'first'), **dict.fromkeys(df_final_annotation, ';'.join)})
              .rename_axis(None))
 
-    #remove a unused coloum
-    df_final.drop(['query'], inplace=True, axis=1, errors='ignore')
+    ##il seguente codice serve per sostituire le posizioni vuote con "unassigned"
+    # Converti tutte le colonne in stringhe prima di applicare la funzione
+    df_final[df_final_annotation.columns] = df_final[df_final_annotation.columns].astype(str)
+    
+    # Definisci una funzione per aggiungere 'Z' secondo le tue regole
+    def add_unassigned_to_void(cell):
+      if cell.startswith(';'):
+        cell = 'unassigned' + cell
+      if cell.endswith(';'):
+        cell = cell + 'unassigned'
+
+      # Suddividi la cella in segmenti utilizzando ';'
+      segments = cell.split(';')
+      # Rimuovi eventuali stringhe vuote dalla lista dei segmenti
+      segments = [s for s in segments if s]
+      # Se la lista dei segmenti è vuota, aggiungi "unassigned" come unico elemento
+      if not segments:
+          segments = ["unassigned"]
+      # Riunisci i segmenti con ';unassigned;' e restituisci il risultato
+      return ';unassigned;'.join(segments)
+
+    # Applica la funzione alle colonne desiderate in df_final
+    for col in df_final_annotation.columns:
+        if col in df_final.columns:
+            df_final[col] = df_final[col].apply(add_unassigned_to_void)
+    ##
 
     #Replace column values if it repeats the same ";" character
     df_final = df_final.mask(df_final.applymap(lambda x: isinstance(x, str) and set(x) == {';'}), '')
