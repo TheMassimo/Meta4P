@@ -908,14 +908,21 @@ class AsyncDownload_Aggregation(Thread):
           df_tmp_sup[sub_set] = df_tmp_sup[sub_set].fillna(0)
 
       ### ONLY for Summary metrics ### final_path
+      # copy of df
+      metrics_df = df_tmp.copy()
       thisName = ""
+      #get name and delete useless rows
       if(len(element) == 1):
         #take cols name
         thisName = element[0]
+        #delete useless columns
+        metrics_df = metrics_df[metrics_df[element[0]] != 'unassigned']
       else:
         #take cols name
         thisName = element[0] +" + "+ element[1]
-
+        #delete useless columns
+        metrics_df = metrics_df[metrics_df[element[0]] != 'unassigned']
+        metrics_df = metrics_df[metrics_df[element[1]] != 'unassigned']
 
       ##get correct input type for count e total (summary files)
       column_count_text = ""
@@ -931,12 +938,11 @@ class AsyncDownload_Aggregation(Thread):
           column_total_text = "Total PSMs"
 
 
-
       # Funzione per calcolare il numero di valori > 0 e diversi da NaN
       def count_positive_notnan(column):
           return (column.gt(0) & ~column.isna()).sum()
       # Calcola il numero di valori per ciascuna colonna
-      count_vals = df_tmp[abundance_set].apply(count_positive_notnan)
+      count_vals = metrics_df[abundance_set].apply(count_positive_notnan)
       # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
       new_row = {'Metrics': column_count_text+': '+thisName}
       new_row.update(count_vals.to_dict())
@@ -950,7 +956,7 @@ class AsyncDownload_Aggregation(Thread):
       def sum_positive_notnan(column):
           return column[(column > 0) & (~column.isna())].sum()
       # Calcola la somma per ciascuna colonna
-      count_vals = df_tmp[abundance_set].apply(sum_positive_notnan)
+      count_vals = metrics_df[abundance_set].apply(sum_positive_notnan)
       # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
       new_row = {'Metrics': column_total_text+': '+thisName}
       new_row.update(count_vals.to_dict())
