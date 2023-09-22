@@ -357,11 +357,25 @@ class ManageSummaryMetricsPre(Thread):
     #get abundance colums name
     abundance_set = list(window.df.filter(regex=r'F\d+'))
 
+    #Remove all rows that have unassigned in all abundance
+    condizione_colonne = window.df[abundance_set] == 'unassigned'
+    # Verifica se tutte le colonne soddisfano la condizione (tutte True lungo l'asse 1)
+    condizione_generale = condizione_colonne.all(axis=1)
+    # Seleziona solo le righe che soddisfano la condizione generale
+    df_filtrato = window.df.loc[~condizione_generale]
+
     # Convertire le colonne in numerico
     window.df[abundance_set] = window.df[abundance_set].apply(pd.to_numeric, errors='coerce')
 
+    #Remove all rows that have NaN in all abundance
+    condizione_colonne = window.df[abundance_set].isna()  # Utilizza .isna() o .isnull()
+    # Verifica se tutte le colonne soddisfano la condizione (tutte True lungo l'asse 1)
+    condizione_generale = condizione_colonne.all(axis=1)
+    # Seleziona solo le righe che soddisfano la condizione generale
+    df_filtrato = window.df.loc[~condizione_generale]
+
     #create new df with the name of aboundances
-    new_df = pd.DataFrame(columns=["Metrics"] + abundance_set)
+    new_df = pd.DataFrame(columns=["Metrics"] + abundance_set + ["Whole dataset"])
 
     # Creare una lista vuota per contenere i DataFrame da concatenare
     dfs_to_concat_count = []
@@ -381,12 +395,14 @@ class ManageSummaryMetricsPre(Thread):
         column_total_text = "Total PSMs"
 
     ##### Quantified proteins #####
+    whole_count_tot = len(window.df)
     ### Count ###
     # Calcolo il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x'
     count_vals = window.df[abundance_set].gt(0).sum()
     # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
     new_row = {'Metrics': column_count_text}
     new_row.update(count_vals.to_dict())
+    new_row.update({'Whole dataset': whole_count_tot})
     # Aggiungo la nuova riga al DataFrame 'new_df'
     tmp_df = pd.DataFrame(new_row, index=[0])
     #aggiungo al vettore dei risultati
@@ -397,6 +413,7 @@ class ManageSummaryMetricsPre(Thread):
     # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
     new_row = {'Metrics': column_total_text}
     new_row.update(count_vals.to_dict())
+    new_row.update({'Whole dataset': whole_count_tot})
     # Aggiungo la nuova riga al DataFrame 'new_df'
     tmp_df = pd.DataFrame(new_row, index=[0])
     #aggiungo al vettore dei risultati
@@ -409,8 +426,11 @@ class ManageSummaryMetricsPre(Thread):
       unique_markedas = sorted(window.df['Marked as'].unique())
       # Iterare sugli elementi unici
       for element in unique_markedas:
-        # Filtrare il DataFrame per includere solo le righe in cui 'Marked as' è uguale a 'element'
-        filtered_df = window.df[window.df['Marked as'] == element]
+        # Filtrare il DataFrame per includere solo le righe in cui 'Marked as' è uguale a 'element' e non ci sono spazi vuoti
+        filtered_df = window.df[(window.df['Marked as'] == element) & (window.df['Marked as'] != '') & (window.df['Marked as'].notna()) & (window.df['Marked as'] != 'unassigned')]
+
+        #conto il totale delle righe che contengono il valore del quale conto le metriche
+        whole_count = filtered_df['Marked as'].count()
 
         ### Count ###
         # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
@@ -419,6 +439,7 @@ class ManageSummaryMetricsPre(Thread):
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
         new_row = {'Metrics': column_count_text+' - ' + element}
         new_row.update(count_vals.to_dict())
+        new_row.update({'Whole dataset': whole_count})
 
         # Creare un DataFrame con la riga corrente
         tmp_df = pd.DataFrame(new_row, index=[0])
@@ -433,6 +454,7 @@ class ManageSummaryMetricsPre(Thread):
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
         new_row = {'Metrics': column_total_text+' - ' + element}
         new_row.update(count_vals.to_dict())
+        new_row.update({'Whole dataset': whole_count})
 
         # Creare un DataFrame con la riga corrente
         tmp_df = pd.DataFrame(new_row, index=[0])
@@ -444,7 +466,10 @@ class ManageSummaryMetricsPre(Thread):
     if 'taxonomic_table' in MyUtility.workDict:
       for column in MyUtility.workDict['taxonomic_table']:
         # Filtrare il DataFrame per includere solo le righe in cui nella colonna selezionata è presente un valore
-        filtered_df = window.df[(window.df[column] != '') & (window.df[column] != 'unassigned') &  window.df[column].notna()]
+        filtered_df = window.df[(window.df[column] != '') & (window.df[column].notna()) & (window.df[column] != 'unassigned')]
+
+        #conto il totale delle righe che contengono il valore del quale conto le metriche
+        whole_count = filtered_df[column].count()
 
         ### Count ###
         # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
@@ -453,6 +478,7 @@ class ManageSummaryMetricsPre(Thread):
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
         new_row = {'Metrics': column_count_text+' - ' + column}
         new_row.update(count_vals.to_dict())
+        new_row.update({'Whole dataset': whole_count})
 
         # Creare un DataFrame con la riga corrente
         tmp_df = pd.DataFrame(new_row, index=[0])
@@ -467,6 +493,7 @@ class ManageSummaryMetricsPre(Thread):
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
         new_row = {'Metrics': column_total_text+' - ' + column}
         new_row.update(count_vals.to_dict())
+        new_row.update({'Whole dataset': whole_count})
 
         # Creare un DataFrame con la riga corrente
         tmp_df = pd.DataFrame(new_row, index=[0])
@@ -478,8 +505,11 @@ class ManageSummaryMetricsPre(Thread):
     if 'functional_table' in MyUtility.workDict:
       for column in MyUtility.workDict['functional_table']:
         # Filtrare il DataFrame per includere solo le righe in cui nella colonna selezionata è presente un valore
-        filtered_df = window.df[(window.df[column] != '') & (window.df[column] != 'unassigned') &  window.df[column].notna()]
+        filtered_df = window.df[(window.df[column] != '') & (window.df[column].notna()) & (window.df[column] != 'unassigned')]
 
+        #conto il totale delle righe che contengono il valore del quale conto le metriche
+        whole_count = filtered_df[column].count()
+        
         ### Count ###
         # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
         count_vals = filtered_df[abundance_set].gt(0).sum()
@@ -487,6 +517,7 @@ class ManageSummaryMetricsPre(Thread):
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
         new_row = {'Metrics': column_count_text+' - ' + column}
         new_row.update(count_vals.to_dict())
+        new_row.update({'Whole dataset': whole_count})
 
         # Creare un DataFrame con la riga corrente
         tmp_df = pd.DataFrame(new_row, index=[0])
@@ -501,6 +532,7 @@ class ManageSummaryMetricsPre(Thread):
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
         new_row = {'Metrics': column_total_text+' - ' + column}
         new_row.update(count_vals.to_dict())
+        new_row.update({'Whole dataset': whole_count})
 
         # Creare un DataFrame con la riga corrente
         tmp_df = pd.DataFrame(new_row, index=[0])
@@ -543,7 +575,7 @@ class AsyncDownload_Aggregation(Thread):
     # Convertire le colonne in numerico
     self.df[abundance_set] = self.df[abundance_set].apply(pd.to_numeric, errors='coerce')
     #create new df with the name of aboundances
-    metrics_df = pd.DataFrame(columns=["Metrics"] + abundance_set)
+    metrics_df = pd.DataFrame(columns=["Metrics"] + abundance_set + ["Whole dataset"])
 
     #variable to check if file will be saved
     self.fileSaved = True
@@ -640,6 +672,7 @@ class AsyncDownload_Aggregation(Thread):
 
           df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name].str.split('[,;]'))
             .explode('new_col')
+            .drop_duplicates()
             .groupby('new_col', as_index=False)
             .count())
 
@@ -675,6 +708,7 @@ class AsyncDownload_Aggregation(Thread):
         #create the new file with the sum of aboundances
         df_tmp = (df_tmp.assign(new_col=df_tmp[col_name].str.split('[,;]'))
           .explode('new_col')
+          .drop_duplicates()
           .groupby('new_col', as_index=False)
           .sum(min_count=1))
 
@@ -769,6 +803,7 @@ class AsyncDownload_Aggregation(Thread):
 
           df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name_2].str.split('[,;]'))
             .explode('new_col')
+            .drop_duplicates()
             .groupby([col_name_1, 'new_col'], as_index=False)
             .count())
 
@@ -804,6 +839,7 @@ class AsyncDownload_Aggregation(Thread):
         #create the new file with the sum of aboundaces
         df_tmp = (df_tmp.assign(new_col=df_tmp[col_name_2].str.split('[,;]'))
               .explode('new_col')
+              .drop_duplicates()
               .groupby([col_name_1, 'new_col'], as_index=False)
               .sum(min_count=1))
 
@@ -937,6 +973,8 @@ class AsyncDownload_Aggregation(Thread):
           column_count_text = "Identified"
           column_total_text = "Total PSMs"
 
+      #conto il totale delle righe che contengono il valore del quale conto le metriche
+      whole_count = len(metrics_df)
 
       # Funzione per calcolare il numero di valori > 0 e diversi da NaN
       def count_positive_notnan(column):
@@ -946,6 +984,7 @@ class AsyncDownload_Aggregation(Thread):
       # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
       new_row = {'Metrics': column_count_text+': '+thisName}
       new_row.update(count_vals.to_dict())
+      new_row.update({'Whole dataset': whole_count})
       # Aggiungo la nuova riga al DataFrame 'new_df'
       tmp_df = pd.DataFrame(new_row, index=[0])
       #aggiungo al vettore dei risultati
@@ -960,6 +999,7 @@ class AsyncDownload_Aggregation(Thread):
       # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
       new_row = {'Metrics': column_total_text+': '+thisName}
       new_row.update(count_vals.to_dict())
+      new_row.update({'Whole dataset': whole_count})
       # Aggiungo la nuova riga al DataFrame 'new_df'
       tmp_df = pd.DataFrame(new_row, index=[0])
       #aggiungo al vettore dei risultati
@@ -1710,22 +1750,18 @@ class ManageFunctional(Thread):
         old_name = window.kegg_ko_listbox.get(0, tk.END)[0]
         # Rinominiamo la colonna
         df_final_annotation = df_final_annotation.rename(columns={old_name: 'KEGG_ko'})
-
       if( hasattr(window, 'frame_kegg_pathway') and (window.kegg_pathway_listbox.size() > 0) ):
         old_name = window.kegg_pathway_listbox.get(0, tk.END)[0]
         # Rinominiamo la colonna
         df_final_annotation = df_final_annotation.rename(columns={old_name: 'KEGG_Pathway'})
-
       if( hasattr(window, 'frame_kegg_module') and (window.kegg_module_listbox.size() > 0) ):
         old_name = window.kegg_module_listbox.get(0, tk.END)[0]
         # Rinominiamo la colonna
         df_final_annotation = df_final_annotation.rename(columns={old_name: 'KEGG_Module'})
-
       if( hasattr(window, 'frame_kegg_reaction') and (window.kegg_reaction_listbox.size() > 0) ):
         old_name = window.kegg_reaction_listbox.get(0, tk.END)[0]
         # Rinominiamo la colonna
         df_final_annotation = df_final_annotation.rename(columns={old_name: 'KEGG_Reaction'})
-
       if( hasattr(window, 'frame_cog') and (window.cog_listbox.size() > 0) ):
         old_name = window.cog_listbox.get(0, tk.END)[0]
         # Rinominiamo la colonna
@@ -1789,7 +1825,6 @@ class ManageFunctional(Thread):
       else: #peptide
         columns_to_match = 'Sequence'
 
-
     #join final_df and annotation_df
     df_final = (df_final.assign(query = df_final[columns_to_match].str.split('; '))
              .explode('query')
@@ -1801,26 +1836,22 @@ class ManageFunctional(Thread):
              .agg({**dict.fromkeys(df_final, 'first'), **dict.fromkeys(df_final_annotation, ';'.join)})
              .rename_axis(None))
 
-    ##il seguente codice serve per sostituire le posizioni vuote con "unassigned"
+    #remove a unused coloum
+    #df_final.drop(['query'], inplace=True, axis=1, errors='ignore')
+
+    ## Il seguente codice serve per sostituire le posizioni vuote con "unassigned"
     # Converti tutte le colonne in stringhe prima di applicare la funzione
     df_final[df_final_annotation.columns] = df_final[df_final_annotation.columns].astype(str)
     
     # Definisci una funzione per aggiungere 'Z' secondo le tue regole
     def add_unassigned_to_void(cell):
-      if cell.startswith(';'):
-        cell = 'unassigned' + cell
-      if cell.endswith(';'):
-        cell = cell + 'unassigned'
-
-      # Suddividi la cella in segmenti utilizzando ';'
-      segments = cell.split(';')
-      # Rimuovi eventuali stringhe vuote dalla lista dei segmenti
-      segments = [s for s in segments if s]
-      # Se la lista dei segmenti è vuota, aggiungi "unassigned" come unico elemento
-      if not segments:
-          segments = ["unassigned"]
-      # Riunisci i segmenti con ';unassigned;' e restituisci il risultato
-      return ';unassigned;'.join(segments)
+        if cell.startswith(';'):
+            cell = 'unassigned' + cell
+        if cell.endswith(';'):
+            cell = cell + 'unassigned'
+        while ";;" in cell:
+            cell = cell.replace(";;", ";unassigned;")
+        return cell
 
     # Applica la funzione alle colonne desiderate in df_final
     for col in df_final_annotation.columns:
