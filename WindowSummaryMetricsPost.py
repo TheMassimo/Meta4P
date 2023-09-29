@@ -32,7 +32,7 @@ class SummaryMetricsPostWindow(tk.Toplevel): #tk.Tk):
         self.iconphoto(False, img)
 
         # configure the root window
-        self.title('SummaryMetrics') #Meta Protein Annotation Aggregation
+        self.title('Summary metrics') #Meta Protein Annotation Aggregation
 
     
         #label template
