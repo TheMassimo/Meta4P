@@ -75,7 +75,7 @@ class SummaryMetricsPostWindow(tk.Toplevel): #tk.Tk):
 
     def download(self):
         #ask directory to save file
-        file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types, initialfile="Annotation metrics", defaultextension=".xlsx")
+        file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types, initialfile="annotation metrics", defaultextension=".xlsx")
 
         #check if a file has been chosen
         if file_path:

@@ -165,7 +165,10 @@ class DynamicOrganicCompoundsWindow(tk.Toplevel): #tk.Tk):
     #SINGLE, BROWSE, MULTIPLE, EXTENDED
     self.all_columns_listbox = Listbox(self.all_columns_frame, yscrollcommand=self.all_columns_scrollbar.set, selectmode=EXTENDED) #background="Blue", fg="white", selectbackground="Red",highlightcolor="Red",
     self.all_columns_listbox.grid(row=0, column=0)
-    self.all_columns_listbox.config(width=40, height=30)
+    if(MyUtility.workDict['mode'] == 'Proteins'):
+      self.all_columns_listbox.config(width=40, height=25)
+    else:
+      self.all_columns_listbox.config(width=40, height=32)
     #configure scrollvar
     self.all_columns_scrollbar.config(command=self.all_columns_listbox.yview)
     self.all_columns_scrollbar.grid(row=0, column=1, sticky="NS")
@@ -377,7 +380,7 @@ class DynamicOrganicCompoundsWindow(tk.Toplevel): #tk.Tk):
     self.frame_separator = tk.Frame(self.frame_right, borderwidth=2, relief='flat')
     self.frame_separator.grid(row=p_row, column=p_column, rowspan=p_rowspan, columnspan=p_columnspan, padx=2, pady=5, sticky=p_sticky)
     #Valid values (Abundance label)
-    self.lbl_abundance = tk.Label(self.frame_separator,text='Separator between multiple protein accessions:', width=30, font=config.font_description)  
+    self.lbl_abundance = tk.Label(self.frame_separator,text='Separator between multiple\nprotein accessions:', width=32, font=config.font_description)  
     self.lbl_abundance.grid(row=0, column=0, padx=6, pady=6)
     #separator Entry
     self.ntr_separator = tk.Entry(self.frame_separator, width=15, validate="key")
