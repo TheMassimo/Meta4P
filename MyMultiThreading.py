@@ -1837,7 +1837,7 @@ class ManageFunctional(Thread):
              .rename_axis(None))
 
     #remove a unused coloum
-    #df_final.drop(['query'], inplace=True, axis=1, errors='ignore')
+    #df_final = df_final.drop(['query'], inplace=True, axis=1, errors='ignore')
 
     ## Il seguente codice serve per sostituire le posizioni vuote con "unassigned"
     # Converti tutte le colonne in stringhe prima di applicare la funzione
@@ -1853,10 +1853,12 @@ class ManageFunctional(Thread):
             cell = cell.replace(";;", ";unassigned;")
         return cell
 
-    # Applica la funzione alle colonne desiderate in df_final
-    for col in df_final_annotation.columns:
-        if col in df_final.columns:
-            df_final[col] = df_final[col].apply(add_unassigned_to_void)
+    #check if fill empty cells in annotation
+    if(window.var_chc_unassigned.get() == 1):
+      # Applica la funzione alle colonne desiderate in df_final
+      for col in df_final_annotation.columns:
+          if col in df_final.columns:
+              df_final[col] = df_final[col].apply(add_unassigned_to_void)
     ##
 
     #Replace column values if it repeats the same ";" character
@@ -1997,15 +1999,17 @@ class ManageFunctional(Thread):
 
           for gruppo in lettere:
               lettere_gruppo = gruppo.split(',')
-              descrizioni_gruppo = [COG_dict.get(lettera, 'unassigned') for lettera in lettere_gruppo]
+              #check if fill empty cells in annotation
+              if(window.var_chc_unassigned.get() == 1):
+                descrizioni_gruppo = [COG_dict.get(lettera, 'unassigned') for lettera in lettere_gruppo]
+              else:
+                descrizioni_gruppo = [COG_dict.get(lettera, '') for lettera in lettere_gruppo]
               descrizioni_lista.append(','.join(descrizioni_gruppo))
 
           return ';'.join(descrizioni_lista)
 
       # Applicare la funzione al DataFrame
       df_final['COG name'] = df_final['COG_category'].apply(get_description)
-
-
 
     #Add table to dict for aggregation windows
     if(MyUtility.workDict['functional_mode'] == 'dynamic'):
@@ -2016,70 +2020,3 @@ class ManageFunctional(Thread):
 
     #save edit df in tmp variable
     window.df_tmp = df_final
-
-
-
-'''
-def prova():
-  category_to_search = {'KEGG_ko':False, 'KEGG_Pathway':False, 'KEGG_Module':False, 'KEGG_Reaction':True}
-  try:
-    #try all download here
-    if(category_to_search['KEGG_ko']):
-      #get online value of KEGG_ko
-      query_ko = kegg_list("orthology").read()
-      print(query_ko)
-    if(category_to_search['KEGG_Pathway']):
-      #get online value of KEGG_pathway
-      query_pathway = kegg_list("pathway").read()
-      print(query_pathway)
-    if(category_to_search['KEGG_Module']):
-      #get online value of KEGG_module
-      query_module = kegg_list("module").read()
-      print(query_module)
-    if(category_to_search['KEGG_Reaction']):
-      #get online value of KEGG_reaction
-      query_reaction = kegg_list("reaction").read()
-      print(query_reaction)
-  except Exception as e:
-    #print("===>>" + str(e))
-    self.internetWork = False
-    return
-
-  #Manage the online results
-  #manage_kegg_query(self)
-  print('FINE')
-
-prova()
-'''
-
-
-### Old code ###
-'''
-df_tmp_2 = (df_tmp.assign(new_col=df_tmp[col_name].str.split('[,;]'))
-.explode('new_col')
-.groupby('new_col', as_index=False)
-.count())
-#edit file_path
-df_tmp_2.to_excel(file_path + "NUM_" + col_name + ".xlsx", index=False) 
-
-#rename col by position not by name
-df_tmp_sup.rename(columns = {df_tmp_sup.columns[0]:col_name, df_tmp_sup.columns[1]:col_count}, inplace = True)
-#kepp only the firt two coloumns
-df_tmp_sup = df_tmp_sup.iloc[:, :2]
-'''
-
-'''
-#old rename
-#change every columns name according to template (i need to start from the higest value and go to the smallest)
-for i in range(len(col_one_list)-1, -1, -1 ):
-  #using the previously ordered columns I start from the last one and go towards the first "F"
-  index_to_do = col_one_list.index(old_cols[i])
-  df.columns = df.columns.str.replace(col_one_list[index_to_do], col_two_list[index_to_do])
-'''
-
-'''
-#time import
-import time
-start = time.process_time()
-print(time.process_time() - start)
-'''
