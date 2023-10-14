@@ -413,7 +413,7 @@ class ManageSummaryMetricsPre(Thread):
     # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
     new_row = {'Metrics': column_total_text}
     new_row.update(count_vals.to_dict())
-    new_row.update({'Whole dataset': whole_count_tot})
+    #new_row.update({'Whole dataset': whole_count_tot})
     # Aggiungo la nuova riga al DataFrame 'new_df'
     tmp_df = pd.DataFrame(new_row, index=[0])
     #aggiungo al vettore dei risultati
@@ -454,7 +454,7 @@ class ManageSummaryMetricsPre(Thread):
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
         new_row = {'Metrics': column_total_text+' - ' + element}
         new_row.update(count_vals.to_dict())
-        new_row.update({'Whole dataset': whole_count})
+        #new_row.update({'Whole dataset': whole_count})
 
         # Creare un DataFrame con la riga corrente
         tmp_df = pd.DataFrame(new_row, index=[0])
@@ -493,7 +493,7 @@ class ManageSummaryMetricsPre(Thread):
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
         new_row = {'Metrics': column_total_text+' - ' + column}
         new_row.update(count_vals.to_dict())
-        new_row.update({'Whole dataset': whole_count})
+        #new_row.update({'Whole dataset': whole_count})
 
         # Creare un DataFrame con la riga corrente
         tmp_df = pd.DataFrame(new_row, index=[0])
@@ -532,7 +532,7 @@ class ManageSummaryMetricsPre(Thread):
         # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
         new_row = {'Metrics': column_total_text+' - ' + column}
         new_row.update(count_vals.to_dict())
-        new_row.update({'Whole dataset': whole_count})
+        #new_row.update({'Whole dataset': whole_count})
 
         # Creare un DataFrame con la riga corrente
         tmp_df = pd.DataFrame(new_row, index=[0])
@@ -999,7 +999,7 @@ class AsyncDownload_Aggregation(Thread):
       # Creo un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
       new_row = {'Metrics': column_total_text+': '+thisName}
       new_row.update(count_vals.to_dict())
-      new_row.update({'Whole dataset': whole_count})
+      #new_row.update({'Whole dataset': whole_count})
       # Aggiungo la nuova riga al DataFrame 'new_df'
       tmp_df = pd.DataFrame(new_row, index=[0])
       #aggiungo al vettore dei risultati
@@ -1835,14 +1835,14 @@ class ManageFunctional(Thread):
              .groupby('index')
              .agg({**dict.fromkeys(df_final, 'first'), **dict.fromkeys(df_final_annotation, ';'.join)})
              .rename_axis(None))
-
-    #remove a unused coloum
-    #df_final = df_final.drop(['query'], inplace=True, axis=1, errors='ignore')
-
+    
     ## Il seguente codice serve per sostituire le posizioni vuote con "unassigned"
     # Converti tutte le colonne in stringhe prima di applicare la funzione
     df_final[df_final_annotation.columns] = df_final[df_final_annotation.columns].astype(str)
     
+    #remove a unused coloum (to do after the previuos check on df_final_annotation.columns)
+    df_final.drop('query', axis=1, inplace=True)
+
     # Definisci una funzione per aggiungere 'Z' secondo le tue regole
     def add_unassigned_to_void(cell):
         if cell.startswith(';'):
@@ -1860,7 +1860,6 @@ class ManageFunctional(Thread):
           if col in df_final.columns:
               df_final[col] = df_final[col].apply(add_unassigned_to_void)
     ##
-
     #Replace column values if it repeats the same ";" character
     df_final = df_final.mask(df_final.applymap(lambda x: isinstance(x, str) and set(x) == {';'}), '')
     #other method
@@ -2017,6 +2016,9 @@ class ManageFunctional(Thread):
     else:
       MyUtility.workDict['functional_table']      = ["COG_category", "GOs", "EC", "KEGG_ko", "KEGG_Pathway", "KEGG_Module", "KEGG_Reaction", "CAZy"]
       MyUtility.workDict['functional_to_display'] = ["COG_category", "GOs", "EC", "KEGG KO", "KEGG pathway", "KEGG module", "KEGG reaction", "CAZy"]
+
+    
+    
 
     #save edit df in tmp variable
     window.df_tmp = df_final
