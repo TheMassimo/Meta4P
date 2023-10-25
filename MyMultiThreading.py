@@ -670,11 +670,17 @@ class AsyncDownload_Aggregation(Thread):
           #For the safe I convert this column to a string before split
           df_tmp_sup = df_tmp_sup.astype({col_name: 'str'})
 
-          df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name].str.split('[,;]'))
-            .explode('new_col')
-            .drop_duplicates()
-            .groupby('new_col', as_index=False)
-            .count())
+          if(self.params["mode"] == "PSMs"):
+            df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name].str.split('[,;]'))
+              .explode('new_col')
+              .groupby('new_col', as_index=False)
+              .count())
+          else: #Proteins/Peptides
+            df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name].str.split('[,;]'))
+              .explode('new_col')
+              .drop_duplicates()
+              .groupby('new_col', as_index=False)
+              .count())
 
           #edit final_path_sup
           exstension = ""
@@ -706,11 +712,18 @@ class AsyncDownload_Aggregation(Thread):
         df_tmp = df_tmp.astype({col_name: 'str'})
 
         #create the new file with the sum of aboundances
-        df_tmp = (df_tmp.assign(new_col=df_tmp[col_name].str.split('[,;]'))
-          .explode('new_col')
-          .drop_duplicates()
-          .groupby('new_col', as_index=False)
-          .sum(min_count=1))
+        if(self.params["mode"] == "PSMs"):
+          df_tmp = (df_tmp.assign(new_col=df_tmp[col_name].str.split('[,;]'))
+            .explode('new_col')
+            .groupby('new_col', as_index=False)
+            .sum(min_count=1))
+        else: #Proteins/Peptides
+          #create the new file with the sum of aboundances
+          df_tmp = (df_tmp.assign(new_col=df_tmp[col_name].str.split('[,;]'))
+            .explode('new_col')
+            .drop_duplicates()
+            .groupby('new_col', as_index=False)
+            .sum(min_count=1))
 
         #rename the tmp col use to explode
         df_tmp.rename(columns = {'new_col':col_name}, inplace = True)
@@ -801,11 +814,17 @@ class AsyncDownload_Aggregation(Thread):
           #For the safe I convert this column to a string before split
           df_tmp_sup = df_tmp_sup.astype({col_name_2: 'str'})
 
-          df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name_2].str.split('[,;]'))
-            .explode('new_col')
-            .drop_duplicates()
-            .groupby([col_name_1, 'new_col'], as_index=False)
-            .count())
+          if(self.params["mode"] == "PSMs"):
+            df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name_2].str.split('[,;]'))
+              .explode('new_col')
+              .groupby([col_name_1, 'new_col'], as_index=False)
+              .count())
+          else: #Proteins/Peptides
+              df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name_2].str.split('[,;]'))
+              .explode('new_col')
+              .drop_duplicates()
+              .groupby([col_name_1, 'new_col'], as_index=False)
+              .count())
 
           #edit final_path_sup
           exstension = ""
@@ -835,13 +854,19 @@ class AsyncDownload_Aggregation(Thread):
         df_tmp = df_tmp.dropna(subset=[col_name_1, col_name_2])
         #For the safe I convert this column to a string before split
         df_tmp = df_tmp.astype({col_name_2: 'str'})
- 
+        
         #create the new file with the sum of aboundaces
-        df_tmp = (df_tmp.assign(new_col=df_tmp[col_name_2].str.split('[,;]'))
-              .explode('new_col')
-              .drop_duplicates()
-              .groupby([col_name_1, 'new_col'], as_index=False)
-              .sum(min_count=1))
+        if(self.params["mode"] == "PSMs"):
+          df_tmp = (df_tmp.assign(new_col=df_tmp[col_name_2].str.split('[,;]'))
+            .explode('new_col')
+            .groupby([col_name_1, 'new_col'], as_index=False)
+            .sum(min_count=1))
+        else: #Proteins/Peptides
+          df_tmp = (df_tmp.assign(new_col=df_tmp[col_name_2].str.split('[,;]'))
+            .explode('new_col')
+            .drop_duplicates()
+            .groupby([col_name_1, 'new_col'], as_index=False)
+            .sum(min_count=1))
 
         #rename the tmp col use to explode
         df_tmp.rename(columns = {'new_col':col_name_2}, inplace = True)
