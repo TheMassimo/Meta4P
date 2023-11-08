@@ -635,6 +635,9 @@ class AsyncDownload_Aggregation(Thread):
       cols = list(self.df.filter(regex=r'F\d+'))
       #add in first place the col_name of column that i want aggragate
       cols.extend(element)
+      #add Sequence column to avoid a problem with drop duplicate during the aggregation phase
+      #that could remove two row with the same values but of two different sequence
+      cols.extend(["Sequence"])
       #create a tmp df
       df_tmp = self.df[cols]
 
