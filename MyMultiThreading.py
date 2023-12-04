@@ -938,6 +938,13 @@ class AsyncDownload_Aggregation(Thread):
         #edit final_path
         final_path = self.params["prefix"] + col_name_1 + "+" + col_name_2 + self.params["suffix"]
 
+
+      # delete unusless column add only for avoid problem with some duplicate sequence during marge
+      if 'Sequence' in df_tmp.columns:
+        df_tmp = df_tmp.drop('Sequence', axis=1)
+      if 'Sequence' in df_tmp_sup.columns:
+        df_tmp_sup = df_tmp_sup.drop('Sequence', axis=1)
+
       #control to add extra columns in file to show proteins/peptides count
       if self.params["extra_counts_col"] or self.params["counts_col"] :
         # Get last column from df_tmp_sup (that contain counts)
