@@ -1447,8 +1447,11 @@ class ManageData(Thread):
       df_final.insert(1, 'Master Protein Accessions', master_col)
       
     #control to put zero in empty cells
+    print("111")
     if( hasattr(window, 'chc_fill_zero') and (window.chc_fill_zero.grid_info() != {}) ):
+      print("222")
       if(window.var_chc_fill_zero.get() == 1):
+        print("333")
         df_final[sub_set] = df_final[sub_set].fillna(0)
     
     #Final Reorder
