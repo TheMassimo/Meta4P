@@ -1445,13 +1445,12 @@ class ManageData(Thread):
       #insert columns in correct order
       df_final.insert(0, 'Sequence', sequence_col)
       df_final.insert(1, 'Master Protein Accessions', master_col)
-      
+    
+    #recreate abundace colums for fill 0 in PSMs mode
+    sub_set = list(df_final.filter(regex=r'F\d+'))
     #control to put zero in empty cells
-    print("111")
     if( hasattr(window, 'chc_fill_zero') and (window.chc_fill_zero.grid_info() != {}) ):
-      print("222")
       if(window.var_chc_fill_zero.get() == 1):
-        print("333")
         df_final[sub_set] = df_final[sub_set].fillna(0)
     
     #Final Reorder
