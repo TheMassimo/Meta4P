@@ -637,7 +637,10 @@ class AsyncDownload_Aggregation(Thread):
       cols.extend(element)
       #add Sequence column to avoid a problem with drop duplicate during the aggregation phase
       #that could remove two row with the same values but of two different sequence
-      cols.extend(["Sequence"])
+      # Note that this problem is present only in peptide and PSMs, not in Protein(Obviously)
+      # for this reason before adding "Sequence" we need to check if it exist in df (protein not contain that)
+      if "Sequence" in self.df.columns:
+        cols.extend(["Sequence"])
       #create a tmp df
       df_tmp = self.df[cols]
 
