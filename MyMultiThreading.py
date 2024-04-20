@@ -985,18 +985,20 @@ class AsyncDownload_Aggregation(Thread):
       # copy of df
       metrics_df = df_tmp.copy()
       thisName = ""
+
       #get name and delete useless rows
       if(len(element) == 1):
         #take cols name
         thisName = element[0]
         #delete useless columns
-        metrics_df = metrics_df[metrics_df[element[0]] != 'unassigned']
+        metrics_df = metrics_df.drop(columns=metrics_df.filter(like=element[0]).columns) #metrics_df[metrics_df[element[0]] != 'unassigned']
+
       else:
         #take cols name
         thisName = element[0] +" + "+ element[1]
         #delete useless columns
-        metrics_df = metrics_df[metrics_df[element[0]] != 'unassigned']
-        metrics_df = metrics_df[metrics_df[element[1]] != 'unassigned']
+        metrics_df = metrics_df.drop(columns=metrics_df.filter(like=element[0]).columns) #metrics_df[metrics_df[element[0]] != 'unassigned']
+        metrics_df = metrics_df.drop(columns=metrics_df.filter(like=element[1]).columns) #metrics_df[metrics_df[element[1]] != 'unassigned']
 
       ##get correct input type for count e total (summary files)
       column_count_text = ""

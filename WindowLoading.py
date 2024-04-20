@@ -50,7 +50,7 @@ class LoadingWindow(tk.Toplevel):
     self.grab_set()
 
     #Disable exit button and other
-    self.attributes("-disabled", True)
+    #self.attributes("-disabled", True)
 
 
 if __name__ == "__main__":
