@@ -18,12 +18,17 @@ import pandas as pd
 import random
 #importo os
 import os
+#importo shutil
+import shutil
 
 # importing the threading module
 from threading import Thread
 
 #import loading window
 import WindowLoading as wLd
+
+#import prefix and sufix window
+import WindowNameExtension as wNE
 
 class RenameColumnsWindow(tk.Toplevel): #tk.Tk):
   def __init__(self, wn_root, wn_previous):
@@ -122,9 +127,12 @@ class RenameColumnsWindow(tk.Toplevel): #tk.Tk):
     self.lbl_loadEditable = tk.Label(self, text='Rename/reorder',width=25,font=config.font_title)  
     self.lbl_loadEditable.grid(row=1, column=6, padx=6, pady=6)
     #Final Done button
-    self.btn_rename = tk.Button(self, text='Rename/reorder sample columns', font=config.font_button, width=27, command=self.download_final)
+    self.btn_rename = tk.Button(self, text='Rename/reorder sample columns', font=config.font_button, width=27, command=self.pre_download)
     self.btn_rename.grid(row=4, column=6, padx=5, pady=5)
 
+    #decription lbl_warning
+    self.lbl_warning = tk.Label(self, text='Warning: once renamed, sample column headers cannot be modified further.',width=100,font=config.font_info)  
+    self.lbl_warning.grid(row=8, column=1, columnspan=6,  padx=0, pady=(20,0))
 
 
     #put this window up
@@ -308,21 +316,72 @@ class RenameColumnsWindow(tk.Toplevel): #tk.Tk):
     else:
       tk.messagebox.showerror(parent=self, title="Error", message="No files uploaded")
 
-  def download_final(self):
+  def pre_download(self):
     #check if file is loadid
     if(not self.isLoad_df):
       tk.messagebox.showerror(parent=self, title="Error", message="No rename files uploaded")
     elif(not self.isLoad_df_tm):
       tk.messagebox.showerror(parent=self, title="Error", message="No template file uploaded")
     else:
+      #reset prefix and suffix value
+      self.prefix = ""
+      self.suffix = ""
+      #create windows to show extra information for prefix and sufix of files_name
+      self.winNameExt = wNE.NameExtensionWindow(self)
 
-      #show loading windows
-      self.winLoad = wLd.LoadingWindow("Renaming file(s)...")
+  def download(self):
+      #create a variable to set if file exist
+      alreadyExists=False
 
-      #create thread to download file
-      download_thread = AsyncRenameFile(self.editable_paths, self.df_tm)
-      download_thread.start()
-      self.monitor_download_file(download_thread)
+      #create a copy of file list
+      files_new = []
+      files_new.extend(self.editable_paths)
+
+      #set the default dir from path of first file
+      directory = os.path.dirname(files_new[0])
+
+      #ask the final dir
+      directory = filedialog.askdirectory(title="Select directory...", initialdir=directory)
+
+      if(directory==""):
+        tk.messagebox.showerror(parent=self, title="Error", message="No directory selected")
+        return
+
+      #for all files create the new path with prefix and suffix and check if the new file exist
+      for x in range(0,len(files_new)):
+        file_path_old = files_new[x]
+        file_name_complete = os.path.basename(file_path_old)
+        file_name, file_ext = os.path.splitext(file_name_complete)
+        file_path_new = directory + "/" + self.prefix + file_name + self.suffix + file_ext
+        files_new[x] = file_path_new
+        if(files_new[x]==self.editable_paths[x]):
+          alreadyExists = True 
+        if(files_new[x]!=self.editable_paths[x] and os.path.exists(files_new[x])):
+          alreadyExists = True 
+
+      #if one of the new file exists ask if you want to overwrite
+      if(alreadyExists):
+        msg_box = tk.messagebox.askquestion('Replace or ignore file', 'Some files with the same name already exist in the destination folder.\nReplace them?', icon='warning')
+        if msg_box == 'yes':
+          self.replaceAll = 1
+        else:
+          self.replaceAll = 0
+      else:
+        self.replaceAll = 1
+
+      #if can to overwrite and there are new path of files, create a copy in the new path
+      if(self.replaceAll==1):
+        for x in range(0,len(files_new)):
+          if(files_new[x]!=self.editable_paths[x]):
+            shutil.copy(self.editable_paths[x], files_new[x])
+
+        #show loading windows
+        self.winLoad = wLd.LoadingWindow("Renaming file(s)...")
+
+        #create thread to download file
+        download_thread = AsyncRenameFile(files_new, self.df_tm)
+        download_thread.start()
+        self.monitor_download_file(download_thread)
 
   def previous_window(self):
     #hide this window

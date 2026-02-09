@@ -101,6 +101,19 @@ class CheckboxList(tk.Frame):
         self.canvas.unbind_all("<MouseWheel>")
         super().destroy()
 
+    def selectedItems(self):
+        # i use a new list
+        sel = []
+
+        # for all checkboxes 
+        for x in range(0,len(self.chcs)):
+            # i check if is selected
+            if(self.var_chcs[x].get()==1):
+                # and i append the text of the checkbox
+                sel.append(self.chcs[x].cget("text"))
+
+        return sel
+
 
 
 class Separator(tk.Frame):

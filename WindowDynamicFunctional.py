@@ -61,22 +61,22 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
     #label template
     self.lbl_loadedFile = tk.Label(self.frame_left, text='No file',width=30,font=config.font_up_base)
     self.lbl_loadedFile.grid(row=1, column=0, padx=5, pady=5)
-    #Download button
-    self.btn_download = tk.Button(self.frame_left, text='Download annotated table', font=config.font_button, width=20,command=self.download)
-    self.btn_download.grid(row=2, column=0, padx=5, pady=5)
     #Fill with unassigned
     self.var_chc_unassigned = IntVar(value=0)
     self.chc_unassigned = tk.Checkbutton(self.frame_left, text='Replace missing values with \'unassigned\'',
                                          width=34, anchor="w", variable=self.var_chc_unassigned, onvalue=1, offvalue=0)
-    self.chc_unassigned.grid(row=3, column=0, padx=5, pady=10)
+    self.chc_unassigned.grid(row=2, column=0, padx=5, pady=10)
     self.chc_unassigned.config(font = config.font_checkbox )
     #Equate I and L
     if( (MyUtility.workDict["mode"] != 'Proteins') and (MyUtility.workDict['functional_match'] == 'peptide')):
       self.var_chc_IandL = IntVar(value=0)
-      self.chc_IandL = tk.Checkbutton(self.frame_left, text='I and L treated as equivalent for annotation',
-                                           width=34, anchor="w", variable=self.var_chc_IandL, onvalue=1, offvalue=0)
-      self.chc_IandL.grid(row=4, column=0, padx=5, pady=10)
+      self.chc_IandL = tk.Checkbutton(self.frame_left, text='I (isoleucine) has been replaced by L (leucine) in all peptide sequences listed in the annotation input',
+                                           wraplength=250, width=34, anchor="w", variable=self.var_chc_IandL, onvalue=1, offvalue=0)
+      self.chc_IandL.grid(row=3, column=0, padx=5, pady=10)
       self.chc_IandL.config(font = config.font_checkbox )
+    #Download button
+    self.btn_download = tk.Button(self.frame_left, text='Download annotated table', font=config.font_button, width=20,command=self.download)
+    self.btn_download.grid(row=4, column=0, padx=5, pady=5)
 
     ### centre area ###
     #title frame    

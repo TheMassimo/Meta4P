@@ -53,24 +53,34 @@ class StandardFunctionalWindow(tk.Toplevel): #tk.Tk):
     #Only for space
     self.lbl_space_1 = tk.Label(self, text='',width=30,font=config.font_up_base)
     self.lbl_space_1.grid(row=0, column=0, padx=5, pady=5)
+
     #Load annotation button
     self.btn_loadFile = tk.Button(self, text='Upload annotation file', font=config.font_button, width=22, command=self.upload_annotation_file)
-    self.btn_loadFile.grid(row=1, column=0, padx=5, pady=5)
+    self.btn_loadFile.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
+
     #label annotation loaded
     self.lbl_loadedFile = tk.Label(self, text='No file',width=30,font=config.font_up_base)
-    self.lbl_loadedFile.grid(row=2, column=0, padx=5, pady=5)
+    self.lbl_loadedFile.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+
+    #label annotation info
+    self.lbl_annotationInfo = tk.Label(self, text='Meta4P automatically retrieves functional annotations for 8 main levels provided by the eggNOG-mapper output: COG category, GO category, EC number, KEGG KO, KEGG Pathway, KEGG Module, KEGG Reaction, and CAZy.\nTo retrieve information at other levels, please choose "Other/custom functional annotation" instead of "eggNOG-mapper output" in the previous step, then manually select the columns for your desired levels.', 
+                                        wraplength=500, width=100, font=config.font_info)
+    self.lbl_annotationInfo.grid(row=3, column=0, columnspan=2, padx=0, pady=0)
+
     #Download button
     self.btn_download = tk.Button(self, text='Download annotated table', font=config.font_button, width=22,command=self.download)
-    self.btn_download.grid(row=3, column=0, padx=5, pady=5)
+    self.btn_download.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
+
     #Only for space
     self.lbl_space_2 = tk.Label(self, text='',width=30,font=config.font_up_base)
-    self.lbl_space_2.grid(row=4, column=0, padx=5, pady=5)
+    self.lbl_space_2.grid(row=5, column=0, padx=5, pady=5)
+
     #Previous Step
     self.btn_previous_step = tk.Button(self, text='← Previous step', font=config.font_button, width=22,command=self.previous_window)
-    self.btn_previous_step.grid(row=5, column=0, padx=20, pady=5)
+    self.btn_previous_step.grid(row=6, column=0, padx=20, pady=5)
     #Next Step
     self.btn_next_step = tk.Button(self, text='Next step →', font=config.font_button, width=22,command=self.next_window)
-    self.btn_next_step.grid(row=5, column=2, padx=20, pady=5)
+    self.btn_next_step.grid(row=6, column=2, padx=20, pady=5)
 
 
     ### right area ###
@@ -94,13 +104,13 @@ class StandardFunctionalWindow(tk.Toplevel): #tk.Tk):
     self.chc_unassigned.grid(row=3, column=2, padx=5, pady=5)
     self.chc_unassigned.config(font = config.font_checkbox )
 
-    #Equate I and L
-    if( (MyUtility.workDict["mode"] != 'Proteins') and (MyUtility.workDict['functional_match'] == 'peptide')):
-      self.var_chc_IandL = IntVar(value=0)
-      self.chc_IandL = tk.Checkbutton(self, text='I and L treated as equivalent for annotation',
-                                           width=34, anchor="w", variable=self.var_chc_IandL, onvalue=1, offvalue=0)
-      self.chc_IandL.grid(row=4, column=2, padx=(5,10), pady=(10,20))
-      self.chc_IandL.config(font = config.font_checkbox )
+    ##Equate I and L
+    #if( (MyUtility.workDict["mode"] != 'Proteins') and (MyUtility.workDict['functional_match'] == 'peptide')):
+    #  self.var_chc_IandL = IntVar(value=0)
+    #  self.chc_IandL = tk.Checkbutton(self, text='I (isoleucine) has been replaced by L (leucine) in all peptide sequences listed in the annotation input',
+    #                                       wraplength=250, width=34, anchor="w", variable=self.var_chc_IandL, onvalue=1, offvalue=0)
+    #  self.chc_IandL.grid(row=4, column=2, padx=(5,10), pady=(10,20))
+    #  self.chc_IandL.config(font = config.font_checkbox )
 
     #put this window up
     self.lift()

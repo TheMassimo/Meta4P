@@ -1,4 +1,5 @@
 #import config module for environmental variability
+from operator import index
 import config
 #import my utility class and function
 import MyUtility
@@ -28,6 +29,7 @@ import os
 import sys
 import openpyxl
 import csv
+import time
 
 # Import Biopython modules to interact with KEGG
 #from Bio import SeqIO
@@ -570,6 +572,7 @@ class AsyncDownload_Aggregation(Thread):
     ### only for Summary metrics ###
     # Creare una lista vuota per contenere i DataFrame da concatenare
     dfs_to_concat = []
+
     #get abundance colums name
     abundance_set = list(self.df.filter(regex=r'F\d+'))
     # Convertire le colonne in numerico
@@ -585,6 +588,9 @@ class AsyncDownload_Aggregation(Thread):
 
     #variable to check connection    
     self.internetWork = True
+
+    #list of COG category
+    self.df_cog = self.df.groupby(["COG_category", "COG name"]).size().reset_index(name="count")
 
     #only if online search is request
     if(self.params["keggOnline"]):
@@ -641,6 +647,7 @@ class AsyncDownload_Aggregation(Thread):
       # for this reason before adding "Sequence" we need to check if it exist in df (protein not contain that)
       if "Sequence" in self.df.columns:
         cols.extend(["Sequence"])
+
       #create a tmp df
       df_tmp = self.df[cols]
 
@@ -732,6 +739,7 @@ class AsyncDownload_Aggregation(Thread):
             .sum(min_count=1))
 
         #rename the tmp col use to explode
+        df_tmp.rename(columns = {col_name:'old_col'}, inplace = True)
         df_tmp.rename(columns = {'new_col':col_name}, inplace = True)
 
         #remove the new empty values
@@ -742,8 +750,22 @@ class AsyncDownload_Aggregation(Thread):
         final_path = self.params["prefix"] + col_name + self.params["suffix"]
 
         ## for df_tmp and df_tmp_sup ##
-        #add extra column with description of kegg name
-        if( (col_name == "KEGG_ko") and (category_to_search['KEGG_ko']) ):
+        #add extra column with description of kegg or cog name
+        if( col_name == "COG_category" ):
+          #get position for new column
+          position_to_insert = df_tmp.columns.get_loc("COG_category")+1
+          #crearte a new empty column
+          df_tmp.insert(loc=position_to_insert, column="COG name", value=['' for i in range(df_tmp.shape[0])])
+
+          #it looks for all the values cog and associates them with the correct description
+          for i, row in self.df_cog.iterrows():
+            df_tmp["COG name"].where(df_tmp["COG_category"] != row[0], row[1], inplace=True)
+   
+          #check for add description also in df_tmp_sup
+          if(self.params["sup_tab"]):
+            df_tmp_sup.insert(loc=position_to_insert, column="COG name", value=df_tmp["COG name"])
+
+        elif( (col_name == "KEGG_ko") and (category_to_search['KEGG_ko']) ):
           #get position for new column
           position_to_insert = df_tmp.columns.get_loc("KEGG_ko")+1
           #crearte a new empty column
@@ -799,6 +821,8 @@ class AsyncDownload_Aggregation(Thread):
           if(self.params["sup_tab"]):
             df_tmp_sup.insert(loc=position_to_insert, column="Reaction name", value=df_tmp["Reaction name"])
 
+        #delete the old_col
+        df_tmp = df_tmp.drop(columns=["old_col"])
       else:
         #take cols name
         col_name_1 = element[0]
@@ -875,13 +899,28 @@ class AsyncDownload_Aggregation(Thread):
             .sum(min_count=1))
 
         #rename the tmp col use to explode
+        df_tmp.rename(columns = {col_name_2:'old_col'}, inplace = True)
         df_tmp.rename(columns = {'new_col':col_name_2}, inplace = True)
 
         #remove the new empty value
         df_tmp = df_tmp.replace('', np.nan)
         df_tmp = df_tmp.dropna(subset=[col_name_1, col_name_2])
 
-        #add extra column with description of kegg name
+        #add extra column with description of kegg or cog name
+        if( col_name_2 == "COG_category" ):
+          #get position for new column
+          position_to_insert = df_tmp.columns.get_loc("COG_category")+1
+          #crearte a new empty column
+          df_tmp.insert(loc=position_to_insert, column="COG name", value=['' for i in range(df_tmp.shape[0])])
+
+          #it looks for all the values cog and associates them with the correct description
+          for i, row in self.df_cog.iterrows():
+            df_tmp["COG name"].where(df_tmp["COG_category"] != row[0], row[1], inplace=True)
+   
+          #check for add description also in df_tmp_sup
+          if(self.params["sup_tab"]):
+            df_tmp_sup.insert(loc=position_to_insert, column="COG name", value=df_tmp["COG name"])
+
         if( (col_name_2 == "KEGG_ko") and (category_to_search['KEGG_ko']) ):
           #get position for new column
           position_to_insert = df_tmp.columns.get_loc("KEGG_ko")+1
@@ -940,6 +979,9 @@ class AsyncDownload_Aggregation(Thread):
 
         #edit final_path
         final_path = self.params["prefix"] + col_name_1 + "+" + col_name_2 + self.params["suffix"]
+
+        #delete the old_col
+        df_tmp = df_tmp.drop(columns=["old_col"])
 
 
       # delete unusless column add only for avoid problem with some duplicate sequence during marge
@@ -1167,6 +1209,8 @@ class AsyncRenameFile(Thread):
 
         #check to save file  
         try:
+         
+
           #file_path_without_extension, file_extension = self.file.name.rsplit(".", 1)
           if file_extension == "xlsx":
             df.to_excel(filepath, index=False)
@@ -1178,6 +1222,8 @@ class AsyncRenameFile(Thread):
       else:
         self.correctLen = False
       
+      time.sleep(0.2)  
+
 #class to manage file on protein window
 #changing the order of the controls inside the function can break the correct functioning##
 class ManageData(Thread):
@@ -1489,13 +1535,17 @@ class ManageDataDynamic(Thread):
 
     #Control for rename columns
     #Protein Acession
+    columnName = ""
     if( hasattr(window, 'frame_proteinAccession') ):
       old_name = window.proteinAccession_listbox.get(0, tk.END)[0]
       # Rinominiamo la colonna
       if(MyUtility.workDict['mode'] == 'Proteins'):
         df_final = df_final.rename(columns={old_name: 'Accession'})
+        columnName = 'Accession'
       else:
         df_final = df_final.rename(columns={old_name: 'Master Protein Accessions'})
+        columnName = 'Master Protein Accessions'
+
     #Peptide Sequence
     if( hasattr(window, 'frame_peptideSequence') ):
       old_name = window.peptideSequence_listbox.get(0, tk.END)[0]
@@ -1593,6 +1643,19 @@ class ManageDataDynamic(Thread):
     elif(MyUtility.workDict["mode"] == 'PSMs'):
       #before save, reorder file according to "Sequence" column
       df_final = df_final.sort_values('Sequence')
+    
+    if(columnName!=""):
+      # Convert to string (handles NaN better) and split
+      parts = df_final[columnName].astype("string").str.split("|")
+
+      # Optional: Remove spaces from each part
+      parts = parts.apply(lambda lst: [x.strip() for x in lst] if isinstance(lst, list) else lst)
+
+      # If len == 1 take element 0, otherwise take element 1 (the second one)
+      df_final[columnName] = parts.str.get(0).where(parts.str.len() == 1, parts.str.get(1))
+
+      # Normalize empty strings to NaN (if you prefer to treat them as missing)
+      df_final[columnName] = df_final[columnName].replace("", pd.NA)
 
     #save edit df in tmp variable
     window.df_tmp = df_final
@@ -1663,10 +1726,9 @@ class ManageTaxonomic(Thread):
       # Sostituisci le stringhe vuote ('') con "unassigned" nelle colonne di interesse
       df_final[columns_to_fill] = df_final[columns_to_fill].replace('', 'unassigned')
 
-
     #Add table to dict for aggregation windows
+    #MyUtility.workDict['taxonomic_table'] = ["domain", "phylum", "class", "order", "family", "genus", "species"]
     MyUtility.workDict['taxonomic_table'] = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
-
 
     #save edit df in tmp variable
     window.df_tmp = df_final

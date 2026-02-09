@@ -1,4 +1,5 @@
 #import config module for environmental variability
+from turtle import width
 import config
 #import my utility class and function
 import MyUtility
@@ -160,27 +161,50 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     self.frame_centre.grid(row=0, column=1, padx=2, pady=2,sticky="nsew")
 
     #Choose Union label
-    self.lbl_chooseUnion = tk.Label(self.frame_centre, text='Taxon-specific function', width=40, font=config.font_title)  
+    self.lbl_chooseUnion = tk.Label(self.frame_centre, text='Combined taxonomic-functional levels', width=40, font=config.font_title)  
     self.lbl_chooseUnion.grid(row=0, column=0, columnspan=3, sticky='EW', padx=6, pady=6 )
     #check if there are both the annotaion 
     if(MyUtility.workDict["taxonomic"] and MyUtility.workDict["functional"]):
+      #Add button
+      self.btn_add_combinations = tk.Button(self.frame_centre, text='Add combinations between the taxonomic and functional levels selected on the left',
+                                                wraplength=120, font=config.font_button, width=18, height=8, command=self.add_all_combinations_on_the_left)
+      self.btn_add_combinations.grid(row=1, column=0, pady=10, sticky='n')
+
+      #Add button
+      self.btn_add_all_possible = tk.Button(self.frame_centre, text='Add all possible combinations between taxonomic and functional levels',
+                                                wraplength=120, font=config.font_button, width=18, height=8, command=self.add_all_elements)
+      self.btn_add_all_possible.grid(row=1, column=1, pady=10, sticky='n')
+
+      #Add button
+      self.btn_abtn_add_custom_combinationsdd = tk.Button(self.frame_centre, text='Add custom combinations between taxonomic and functional levels',
+                                                wraplength=120, font=config.font_button, width=18, height=8, command=self.view_custom_combinations)
+      self.btn_abtn_add_custom_combinationsdd.grid(row=1, column=2, pady=10, sticky='n')
+
+      #Add frame_taxonomic_functional    
+      #self.frame_taxonomic_functional = tk.Frame(self.frame_centre, borderwidth=2, relief='flat')
+      #self.frame_taxonomic_functional.grid(row=2, column=0, columnspan=3, padx=2, pady=2, sticky="nsew")
+
       #option to taxonomic
       self.opt_taxonomic_var = StringVar(value=self.list_taxonomic[0]) # dafault value
       self.opt_taxonomic = tk.OptionMenu(self.frame_centre, self.opt_taxonomic_var, *self.list_taxonomic)
-      self.opt_taxonomic.grid(row=1, column=0, padx=10, pady=6, sticky='n')
-      self.opt_taxonomic.config(width=18)
+      self.opt_taxonomic.grid(row=2, column=0, sticky='n')
+      self.opt_taxonomic.config(width=14)
       self.opt_taxonomic.config(font = config.font_checkbox )
 
       #option to functional
       self.opt_functional_var = StringVar(value=self.list_functional_to_display[0]) # dafault value
       self.opt_functional = tk.OptionMenu(self.frame_centre, self.opt_functional_var, *self.list_functional_to_display)
-      self.opt_functional.grid(row=1, column=1, padx=10, pady=6, sticky='n')
-      self.opt_functional.config(width=18)
+      self.opt_functional.grid(row=2, column=1, sticky='n')
+      self.opt_functional.config(width=14)
       self.opt_functional.config( font = config.font_checkbox )
 
+      #Add button
+      self.btn_add = tk.Button(self.frame_centre, text='Add', font=config.font_button, width=18, command=self.add_element)
+      self.btn_add.grid(row=2, column=2, sticky='n')
+
       #Create frame and scrollbar
-      self.my_frame = Frame(self.frame_centre, bg='red',)
-      self.my_frame.grid(row=2, column=0, rowspan=4, columnspan=2, sticky='n')
+      self.my_frame = Frame(self.frame_centre)
+      self.my_frame.grid(row=3, column=0, rowspan=8, columnspan=2, sticky='n')
       #scrollbar
       self.my_scrollbar = Scrollbar(self.my_frame,  orient=VERTICAL)
       #Listbox
@@ -192,21 +216,19 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
       self.my_scrollbar.config(command=self.my_listbox.yview)
       self.my_scrollbar.grid(row=0, column=1, sticky="NS")
 
-      #Add button
-      self.btn_add = tk.Button(self.frame_centre, text='Add', font=config.font_button, width=18, command=self.add_element)
-      self.btn_add.grid(row=2, column=2, padx=10, pady=6, sticky='n')
-
-      #Add All button
-      self.btn_add_all = tk.Button(self.frame_centre, text='Add All', font=config.font_button, width=18, command=self.add_all_elements)
-      self.btn_add_all.grid(row=3, column=2, padx=10, pady=6, sticky='n')
-      
       #Remove button
       self.btn_remove = tk.Button(self.frame_centre, text='Remove', font=config.font_button, width=18, command=self.remove_element)
-      self.btn_remove.grid(row=4, column=2, padx=10, pady=6, sticky='n')
+      self.btn_remove.grid(row=9, column=2,sticky='ew')
 
       #Remove All button
       self.btn_remove_all = tk.Button(self.frame_centre, text='Remove all', font=config.font_button, width=18, command=self.remove_all_alement)
-      self.btn_remove_all.grid(row=5, column=2, padx=10, pady=6, sticky='n')
+      self.btn_remove_all.grid(row=10, column=2, sticky='ew')
+
+      self.set_taxonomic_functional = 0
+      self.opt_taxonomic.configure(state="disabled")
+      self.opt_functional.configure(state="disabled")
+      self.btn_add.configure(state="disabled")
+
     else:
       #Choose Union label
       self.lbl_noAnnotation = tk.Label(self.frame_centre, text='Not enough annotations', width=36, font=config.font_up_base)  
@@ -220,9 +242,13 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
 
     #chek if there are at least one annotation file
     if(MyUtility.workDict["taxonomic"] or MyUtility.workDict["functional"]):
+      #Frame checkbox
+      self.frame_checkbox = tk.Frame(self.frame_right)
+      self.frame_checkbox.pack(fill="x", side="top")
+
       #option to extra table download
-      self.lbl_sup_tab = tk.Label(self.frame_right, text='Feature-related peptide counts',width=25,font=config.font_title)
-      self.lbl_sup_tab.grid(row=0, column=0, padx=6, pady=6)
+      self.lbl_sup_tab = tk.Label(self.frame_checkbox, text='Feature-related peptide counts', font=config.font_title)
+      self.lbl_sup_tab.pack(fill="x", padx=0, pady=10)
 
       #checkbox text according to start choose
       box_text = "Export separate tables\n(with single sample and total peptide counts)"
@@ -230,51 +256,92 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
         box_text = "Export separate tables\n(with single sample and total protein counts)"
       #checkbox for choose if download extra tables
       self.var_chcs_sup = IntVar(value=0)
-      self.chcs_sup = tk.Checkbutton(self.frame_right, text=box_text, width=25, wraplength=200, anchor="w", variable=self.var_chcs_sup, onvalue=1, offvalue=0)
+      self.chcs_sup = tk.Checkbutton(self.frame_checkbox, text=box_text, wraplength=400, anchor="w", variable=self.var_chcs_sup, onvalue=1, offvalue=0)
       self.chcs_sup.config(font = config.font_checkbox )
-      self.chcs_sup.grid(row=1, column=0, padx=5, pady=5)
+      self.chcs_sup.pack(fill="x", padx=0, pady=5)
 
-      #checkbox for extra column in results
       #checkbox text according to start choose
-      box_text = "Insert a supplementary column\nin all tables\n(with total peptide counts)"
+      box_text = "Insert a supplementary column in all tables\n(with total peptide counts)"
       if(MyUtility.workDict["mode"] == 'Proteins'):
-        box_text = "Insert a supplementary column\nin all tables\n(with total protein counts)"
+        box_text = "Insert a supplementary column in all tables\n(with total protein counts)"
+      #checkbox for extra column in results
       self.var_chcs_counts_col = IntVar(value=0)
-      self.chcs_counts_col = tk.Checkbutton(self.frame_right, text=box_text, width=25, wraplength=200, anchor="w", variable=self.var_chcs_counts_col, onvalue=1, offvalue=0, command=self.change_extra_counts_col)
+      self.chcs_counts_col = tk.Checkbutton(self.frame_checkbox, text=box_text, wraplength=400, anchor="w", variable=self.var_chcs_counts_col, onvalue=1, offvalue=0, command=self.change_extra_counts_col)
       self.chcs_counts_col.config(font = config.font_checkbox )
-      self.chcs_counts_col.grid(row=2, column=0, padx=5, pady=5)
+      self.chcs_counts_col.pack(fill="x", padx=0, pady=5)
+
       #save start status
       MyUtility.workDict["extra_counts_col"] = self.var_chcs_counts_col.get()      
 
-      #checkbox for choose if filter the counts
       #checkbox text according to start choose
-      box_text = "Filter features (rows) based\non the related peptide counts"
+      box_text = "Filter features (rows) based on the related peptide counts"
       if(MyUtility.workDict["mode"] == 'Proteins'):
-        box_text = "Filter features (rows) based\non the related protein counts"
+        box_text = "Filter features (rows) based on the related protein counts"
+      #checkbox for choose if filter the counts
       self.var_chcs_filter_count = IntVar(value=0)
-      self.chcs_filter_count = tk.Checkbutton(self.frame_right, text=box_text, width=25, wraplength=200, anchor="w", variable=self.var_chcs_filter_count, onvalue=1, offvalue=0, command=self.counts_filter_control)
+      self.chcs_filter_count = tk.Checkbutton(self.frame_checkbox, text=box_text, wraplength=400, anchor="w", variable=self.var_chcs_filter_count, onvalue=1, offvalue=0, command=self.counts_filter_control)
       self.chcs_filter_count.config(font = config.font_checkbox )
-      self.chcs_filter_count.grid(row=3, column=0, padx=5, pady=5)
+      self.chcs_filter_count.pack(fill="x", padx=0, pady=5)
+
       #save start status
       MyUtility.workDict["counts_col"] = self.var_chcs_filter_count.get()
 
+      #Frame filter_counts
+      self.frame_filter_counts = tk.Frame(self.frame_checkbox, borderwidth=0, relief='flat')
+      self.frame_filter_counts.pack(fill="x", padx=0, pady=0)
+
+      #space
+      box_text = ""
+      self.lbl_space_counts = tk.Label(self.frame_filter_counts, text=box_text, width=15, font=config.font_description)
+      self.lbl_space_counts.grid(row=0, column=0)
+
       #Entry for quantity of filter
-      self.ntr_filter_counts = tk.Entry(self.frame_right, width=20, validate="key", validatecommand=self.vcmd)
+      self.ntr_filter_counts = tk.Entry(self.frame_filter_counts, width=12, validate="key", validatecommand=self.vcmd, justify='right')
       self.ntr_filter_counts.insert(0, "0")
-      self.ntr_filter_counts.grid(row=4, column=0, padx=5, pady=5)
+      self.ntr_filter_counts.grid(row=0, column=1)
       self.ntr_filter_counts.configure(state='disabled')
 
       #quantity filter info
-      #checkbox text according to start choose
       box_text = "(min. number of peptides)"
       if(MyUtility.workDict["mode"] == 'Proteins'):
         box_text = "(min. number of protein)"
-      self.lbl_abundanceTot = tk.Label(self.frame_right, text=box_text, width=20, font=config.font_description)
-      self.lbl_abundanceTot.grid(row=5, column=0, padx=5, pady=(0,5))
+      self.lbl_abundanceTot = tk.Label(self.frame_filter_counts, text=box_text, width=20, font=config.font_description)
+      self.lbl_abundanceTot.grid(row=0, column=2)
+
+
+
+      #Frame download
+      self.frame_download = tk.Frame(self.frame_right)
+      self.frame_download.pack(fill="x", side="bottom")
+
+      #Choose Download Info label
+      self.lbl_download_info = tk.Label(self.frame_download, text='Filenames will be generated automatically, just choose the folder and file extension', 
+                                           wraplength=300, width=60, font=config.font_info)  
+      self.lbl_download_info.grid(row=0, column=0)
+
+      #Frame type_file
+      self.frame_type_file = tk.Frame(self.frame_download, borderwidth=2, relief='flat')
+      self.frame_type_file.grid(row=1, column=0)
+
+      #option to type_file
+      self.idx_opt_type_file = 0
+      self.opt_type_file_var = StringVar(value=config.file_types[0])
+      self.opt_type_file = tk.OptionMenu(self.frame_type_file, self.opt_type_file_var, *config.file_types, command=self.on_change_opt_type_file)
+      self.opt_type_file.configure(width=30)
+      self.opt_type_file.grid(row=0, column=0)
+      self.opt_type_file.config( font = config.font_checkbox )
+
+      #Extension Entry
+      self.ntr_extension = tk.Entry(self.frame_type_file, width=10)
+      self.ntr_extension.grid(row=0,column=1)
+      self.ntr_extension.insert(0, "tsv")
+      self.ntr_extension.configure(state='disabled')
 
       #Download button
-      self.btn_remove_all = tk.Button(self.frame_right, text='Download table(s)', font=config.font_button, width=18, command=self.pre_download)
-      self.btn_remove_all.grid(row=6, column=0, rowspan=2, padx=10, pady=(40,6))
+      self.btn_download = tk.Button(self.frame_download, text='Download table(s)', font=config.font_button, width=18, command=self.pre_download)
+      self.btn_download.grid(row=2, column=0)
+
+
 
     ### down area ###
     self.frame_down = tk.Frame(self, borderwidth=2, relief='flat')
@@ -325,6 +392,13 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     '''
     return S.isdigit()  
 
+  def on_change_opt_type_file(self, selected_value):
+    self.idx_opt_type_file = config.file_types.index(selected_value)
+    if(selected_value[1] == ".*"):
+      self.ntr_extension.configure(state='normal')
+    else:
+      self.ntr_extension.configure(state='disabled')
+
   def monitor_download(self, thread):
     if thread.is_alive():
       #check the thread every 100ms
@@ -360,6 +434,46 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
         iscontain = my_string in self.my_listbox.get(0, "end")
         if(not iscontain):
           self.my_listbox.insert(END, my_string)
+
+  def add_all_combinations_on_the_left(self):
+    #loop for insert selected combination
+    for tmp_tax in self.scl_check_taxonomic.selectedItems():
+      for tmp_fun in self.scl_check_functional.selectedItems():
+        #string to insert
+        my_string = tmp_tax+"+"+tmp_fun
+        #check if alredy insert
+        iscontain = my_string in self.my_listbox.get(0, "end")
+        if(not iscontain):
+          self.my_listbox.insert(END, my_string)
+
+  def view_custom_combinations(self):
+    # change enable status of the frame_taxonomic_functional
+    if(self.set_taxonomic_functional == 0):
+      self.set_taxonomic_functional = 1
+      self.opt_taxonomic.configure(state="normal")
+      self.opt_functional.configure(state="normal")
+      self.btn_add.configure(state="normal")
+    else:
+      self.set_taxonomic_functional = 0
+      self.opt_taxonomic.configure(state="disabled")
+      self.opt_functional.configure(state="disabled")
+      self.btn_add.configure(state="disabled")
+
+  def disable_frame(self, frame):
+    #disable status of the controls in the frame
+    for child in frame.winfo_children():
+      try:
+        child.configure(state="disabled")
+      except:
+        pass   
+
+  def enable_frame(self, frame):
+    #enable status of the controls in the frame
+    for child in frame.winfo_children():
+      try:
+        child.configure(state="normal")
+      except:
+        pass
 
   def remove_element(self):
     #delete all select elment from list
@@ -440,11 +554,26 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     self.winNameExt = wNE.NameExtensionWindow(self)
 
   def download(self):
-    #ask position to save all file
-    file_path = filedialog.asksaveasfilename(parent=self,
-                                             filetypes=config.file_types,
-                                             defaultextension=".xlsx",
-                                             initialfile="Filenames will be generated automatically, just choose the folder and file extension")
+    #ask the final dir
+    directory = filedialog.askdirectory(title="Select directory...")
+
+    #error if dir is not selected
+    if(directory==""):
+      tk.messagebox.showerror(parent=self, title="Error", message="No directory selected")
+      return
+
+    #find the type of file
+    type_file = self.opt_type_file_var.get()
+
+    #find the extesion selected
+    extension = config.file_types[self.idx_opt_type_file][1]
+
+    #if the extension is jolly get the text value
+    if(extension == ".*"):
+      extension = "." + self.ntr_extension.get().replace(".","")
+
+    #create the file path
+    file_path = directory + "/" + "a" + extension
 
     #check if a file has been chosen
     if file_path:
