@@ -5,4 +5,5 @@ Meta4P (MetaProteins-Peptides-PSMs Parser) is an easy-to-use bioinformatic appli
 ![Schematic diagram of the Meta4P workflow](AbstractGraphic.png)
 
 Download the latest version (for Windows) at: https://github.com/TheMassimo/Meta4P/releases
+
 Read the original article at: https://pubs.acs.org/doi/10.1021/acs.jproteome.2c00803
