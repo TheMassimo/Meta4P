@@ -58,6 +58,21 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
 
     #fixed list to use with proteome
     #if(MyUtility.workDict['taxonomic_mode'] == 'dynamic'):
+    MyUtility.workDict['taxonomic_table'] = []
+    if 'taxonomic_table1' in MyUtility.workDict:
+        MyUtility.workDict['taxonomic_table'].extend(MyUtility.workDict['taxonomic_table1'])
+    if 'taxonomic_table2' in MyUtility.workDict:
+        MyUtility.workDict['taxonomic_table'].extend(MyUtility.workDict['taxonomic_table2'])
+
+    MyUtility.workDict['functional_table'] = []
+    MyUtility.workDict['functional_to_display'] = []
+    if 'functional_table1' in MyUtility.workDict:
+        MyUtility.workDict['functional_table'].extend(MyUtility.workDict['functional_table1'])
+        MyUtility.workDict['functional_to_display'].extend(MyUtility.workDict['functional_to_display1'])
+    if 'functional_table2' in MyUtility.workDict:
+        MyUtility.workDict['functional_table'].extend(MyUtility.workDict['functional_table2'])
+        MyUtility.workDict['functional_to_display'].extend(MyUtility.workDict['functional_to_display2'])
+
     if 'taxonomic_table' in MyUtility.workDict:
       self.list_taxonomic = MyUtility.workDict['taxonomic_table']
     else:
@@ -65,8 +80,8 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
 
     if 'functional_table' in MyUtility.workDict:
       if(MyUtility.workDict['functional_mode'] == 'dynamic'):
-        self.list_functional             = MyUtility.workDict['functional_table']
-        self.list_functional_to_display = []
+        self.list_functional              = MyUtility.workDict['functional_table']
+        self.list_functional_to_display   = []
         for item in self.list_functional:
           if item.startswith('KEGG'):
             # sostituisci '_' con uno spazio e converti la parola successiva in minuscolo
@@ -75,8 +90,11 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
             new_item = item
           self.list_functional_to_display.append(new_item)
       else:
-        self.list_functional            = MyUtility.workDict['functional_table'] 
-        self.list_functional_to_display = MyUtility.workDict['functional_to_display']
+        self.list_functional              = MyUtility.workDict['functional_table'] 
+        try:
+          self.list_functional_to_display = MyUtility.workDict['functional_to_display']
+        except:
+          self.list_functional_to_display = MyUtility.workDict['functional_table'] 
     else:
       self.list_functional            = []
       self.list_functional_to_display = []
@@ -90,25 +108,20 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     self.lbl_chooseTaxonomic = tk.Label(self.frame_left, text='Taxonomic levels', width=20, font=config.font_title)  
     self.lbl_chooseTaxonomic.grid(row=0, column=0, padx=6, pady=6)
     if(MyUtility.workDict["taxonomic"]):
-      #Load/download frame
-      self.frame_taxonomic_buttons = tk.Frame(self.frame_left, borderwidth=0, relief='flat')
-      self.frame_taxonomic_buttons.grid(row=1, column=0, padx=2, pady=2, sticky="nsew")
-      #select all checkbox
-      self.btn_taxonomic_all = tk.Button(self.frame_taxonomic_buttons, text='Select all', font=config.font_button, width=11)
-      self.btn_taxonomic_all.grid(row=0, column=0, padx=20, pady=5)
-      #select none checkbox
-      self.btn_taxonomic_none = tk.Button(self.frame_taxonomic_buttons, text='Deselect all', font=config.font_button, width=11)
-      self.btn_taxonomic_none.grid(row=0, column=1, padx=0, pady=5)
-
       #taxonomic scroll
-      self.scl_check_taxonomic = MyUtility.CheckboxList(self.frame_left, bg="grey", padx=1, pady=1, height=360)
+      self.scl_check_taxonomic = MyUtility.VirtualCheckboxList(
+                                                    self.frame_left, 
+                                                    width=200,
+                                                    height=360,
+                                                    bg="grey", 
+                                                    padx=1, 
+                                                    pady=1, 
+                                                    select=True
+                                                    )
       self.scl_check_taxonomic.grid(row=2,column=0, rowspan=4)
       #pass list to create checkbox
-      self.scl_check_taxonomic.insertCheckbox(self.list_taxonomic)
+      self.scl_check_taxonomic.insertItems(self.list_taxonomic)
 
-      #add function to select all or deselect all
-      self.btn_taxonomic_all.config(command=self.scl_check_taxonomic.selectAllCheckbox)
-      self.btn_taxonomic_none.config(command=self.scl_check_taxonomic.deselectAllCheckbox)
     else:
       self.lbl_noTaxonomic = tk.Label(self.frame_left, text='No annotations', width=20, font=config.font_up_base)  
       self.lbl_noTaxonomic.grid(row=1, column=0, padx=5, pady=5)
@@ -117,25 +130,19 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     self.lbl_chooseFunctional = tk.Label(self.frame_left, text='Functional levels', font=config.font_title)  
     self.lbl_chooseFunctional.grid(row=0, column=1, padx=6, pady=6)
     if(MyUtility.workDict["functional"]):
-      #Load/download frame
-      self.frame_functional_buttons = tk.Frame(self.frame_left, borderwidth=0, relief='flat')
-      self.frame_functional_buttons.grid(row=1, column=1, padx=2, pady=2, sticky="nsew")
-      #select all checkbox
-      self.btn_functional_all = tk.Button(self.frame_functional_buttons, text='Select all', font=config.font_button, width=11)
-      self.btn_functional_all.grid(row=0, column=0, padx=12, pady=5)
-      #select none checkbox
-      self.btn_functional_none = tk.Button(self.frame_functional_buttons, text='Deselect all', font=config.font_button, width=11)
-      self.btn_functional_none.grid(row=0, column=1, padx=0, pady=5)
-
       #functional scroll
-      self.scl_check_functional = MyUtility.CheckboxList(self.frame_left, bg="grey", padx=1, pady=1, height=360)
+      self.scl_check_functional = MyUtility.VirtualCheckboxList(
+                                                    self.frame_left, 
+                                                    width=200,
+                                                    height=360,
+                                                    bg="grey", 
+                                                    padx=1, 
+                                                    pady=1, 
+                                                    select=True
+                                                    )
       self.scl_check_functional.grid(row=2,column=1, rowspan=4)
       #pass list to create checkbox
-      self.scl_check_functional.insertCheckbox(self.list_functional_to_display)
-
-      #add function to select all or deselect all
-      self.btn_functional_all.config(command=self.scl_check_functional.selectAllCheckbox)
-      self.btn_functional_none.config(command=self.scl_check_functional.deselectAllCheckbox)
+      self.scl_check_functional.insertItems(self.list_functional_to_display)
 
       #control for online reserch of kegg code
       #label title
@@ -179,10 +186,6 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
       self.btn_abtn_add_custom_combinationsdd = tk.Button(self.frame_centre, text='Add custom combinations between taxonomic and functional levels',
                                                 wraplength=120, font=config.font_button, width=18, height=8, command=self.view_custom_combinations)
       self.btn_abtn_add_custom_combinationsdd.grid(row=1, column=2, pady=10, sticky='n')
-
-      #Add frame_taxonomic_functional    
-      #self.frame_taxonomic_functional = tk.Frame(self.frame_centre, borderwidth=2, relief='flat')
-      #self.frame_taxonomic_functional.grid(row=2, column=0, columnspan=3, padx=2, pady=2, sticky="nsew")
 
       #option to taxonomic
       self.opt_taxonomic_var = StringVar(value=self.list_taxonomic[0]) # dafault value
@@ -325,8 +328,8 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
 
       #option to type_file
       self.idx_opt_type_file = 0
-      self.opt_type_file_var = StringVar(value=config.file_types[0])
-      self.opt_type_file = tk.OptionMenu(self.frame_type_file, self.opt_type_file_var, *config.file_types, command=self.on_change_opt_type_file)
+      self.opt_type_file_var = StringVar(value=config.file_types_generic[0])
+      self.opt_type_file = tk.OptionMenu(self.frame_type_file, self.opt_type_file_var, *config.file_types_generic, command=self.on_change_opt_type_file)
       self.opt_type_file.configure(width=30)
       self.opt_type_file.grid(row=0, column=0)
       self.opt_type_file.config( font = config.font_checkbox )
@@ -338,7 +341,7 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
       self.ntr_extension.configure(state='disabled')
 
       #Download button
-      self.btn_download = tk.Button(self.frame_download, text='Download table(s)', font=config.font_button, width=18, command=self.pre_download)
+      self.btn_download = tk.Button(self.frame_download, text='Download table(s)', bg='lime', font=config.font_button, width=18, command=self.pre_download)
       self.btn_download.grid(row=2, column=0)
 
 
@@ -393,7 +396,7 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     return S.isdigit()  
 
   def on_change_opt_type_file(self, selected_value):
-    self.idx_opt_type_file = config.file_types.index(selected_value)
+    self.idx_opt_type_file = config.file_types_generic.index(selected_value)
     if(selected_value[1] == ".*"):
       self.ntr_extension.configure(state='normal')
     else:
@@ -504,7 +507,7 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     #Fill list to taxonomic
     if(MyUtility.workDict["taxonomic"]):
       for i in range(0, len(self.list_taxonomic)):
-        if(self.scl_check_taxonomic.var_chcs[i].get()):
+        if(self.scl_check_taxonomic.sel_state[i] == 1):
           #create list
           inside_list = []
           #get column name and insert inside the "inside_list"
@@ -515,7 +518,7 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     #Fill list to functional
     if(MyUtility.workDict["functional"]):
       for i in range(0, len(self.list_functional)):
-        if(self.scl_check_functional.var_chcs[i].get()):
+        if(self.scl_check_functional.sel_state[i] == 1):
           #create list
           inside_list = []
           #get column name and insert inside the "inside_list"
@@ -566,7 +569,7 @@ class AggregationWindow(tk.Toplevel): #tk.Tk):
     type_file = self.opt_type_file_var.get()
 
     #find the extesion selected
-    extension = config.file_types[self.idx_opt_type_file][1]
+    extension = config.file_types_generic[self.idx_opt_type_file][1]
 
     #if the extension is jolly get the text value
     if(extension == ".*"):

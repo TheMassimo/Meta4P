@@ -22,6 +22,7 @@ from tkinter import filedialog
 from tkinter.filedialog import askopenfile
 from tkinter.messagebox import showinfo
 from tkinter.ttk import Separator, Style
+from collections import defaultdict
 
 # Standard library packages
 import io
@@ -30,6 +31,7 @@ import sys
 import openpyxl
 import csv
 import time
+import re
 
 # Import Biopython modules to interact with KEGG
 #from Bio import SeqIO
@@ -187,10 +189,11 @@ def manage_kegg_query(self):
 
 #class to upload file
 class AsyncUpload(Thread):
-  def __init__(self, filepath):
+  def __init__(self, filepath, index=""):
     super().__init__()
 
     self.filepath = filepath
+    self.index = index
 
   def run(self):
     #variable to check if file will be open
@@ -200,9 +203,15 @@ class AsyncUpload(Thread):
       #save file with pandas
       file_extension = self.filepath.split(".")[-1]
       if file_extension == "xlsx":
-        self.df = pd.read_excel(self.filepath)
+        if(self.index==""):
+          self.df = pd.read_excel(self.filepath)
+        else:
+          self.df = pd.read_excel(self.filepath, index_col=self.index)
       else:
-        self.df = pd.read_csv(self.filepath, sep='\t', low_memory=False)
+        if(self.index==""):
+          self.df = pd.read_csv(self.filepath, sep='\t', low_memory=False)
+        else:
+          self.df = pd.read_csv(self.filepath, index_col=self.index, sep='\t', low_memory=False)
     except Exception as e:
       #print("===>>" + str(e))
       self.fileOpen = False
@@ -357,7 +366,8 @@ class ManageSummaryMetricsPre(Thread):
     window = self.window
 
     #get abundance colums name
-    abundance_set = list(window.df.filter(regex=r'F\d+'))
+    #abundance_set = list(window.df.filter(regex=r'F\d+'))
+    abundance_set = [c for c in window.df.columns if c.startswith("Abundance ")]
 
     #Remove all rows that have unassigned in all abundance
     condizione_colonne = window.df[abundance_set] == 'unassigned'
@@ -387,9 +397,17 @@ class ManageSummaryMetricsPre(Thread):
     column_count_text = ""
     column_total_text = ""
     if(MyUtility.workDict["mode"] == "Proteins"):
-      column_count_text = "Quantified proteins"
-      column_total_text = "Total abundance"
+      if(MyUtility.workDict["quantitative"] == "Spectral Count"):
+        column_count_text = "Identified proteins"
+        column_total_text = "Total spectral counts"
+      else:
+        column_count_text = "Quantified proteins"
+        column_total_text = "Total abundance"
     elif(MyUtility.workDict["mode"] == "Peptides"):
+      if(MyUtility.workDict["quantitative"] == "Spectral Count"):
+        column_count_text = "Identified peptides"
+        column_total_text = "Total spectral counts"
+      else:
         column_count_text = "Quantified peptides"
         column_total_text = "Total abundance"
     else:
@@ -463,88 +481,148 @@ class ManageSummaryMetricsPre(Thread):
 
         # Aggiungere il DataFrame corrente alla lista di DataFrame da concatenare
         dfs_to_concat_sum.append(tmp_df)
+    
+    ##### Database #####
+    if 'Database' in window.df.columns:
+      # Ottenere un array degli elementi unici nella colonna 'maked as'
+      window.df['Database'] = window.df['Database'].astype(str)
+      unique_database = sorted(window.df['Database'].unique())
+      # Iterare sugli elementi unici
+      for element in unique_database:
+        # Filtrare il DataFrame per includere solo le righe in cui 'Database' è uguale a 'element' e non ci sono spazi vuoti
+        filtered_df = window.df[(window.df['Database'] == element) & (window.df['Database'].notna()) & (window.df['Database'] != 'unassigned')]
 
-    ##### Count taxonomic count #####
+        #conto il totale delle righe che contengono il valore del quale conto le metriche
+        whole_count = filtered_df['Database'].count()
+
+        ### Count ###
+        # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
+        count_vals = filtered_df[abundance_set].gt(0).sum()
+
+        # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
+        new_row = {'Metrics': column_count_text+' - ' + element}
+        new_row.update(count_vals.to_dict())
+        new_row.update({'Whole dataset': whole_count})
+
+        # Creare un DataFrame con la riga corrente
+        tmp_df = pd.DataFrame(new_row, index=[0])
+
+        # Aggiungere il DataFrame corrente alla lista di DataFrame da concatenare
+        dfs_to_concat_count.append(tmp_df)
+
+        ### Sum ###
+        # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
+        count_vals = filtered_df[abundance_set].sum()
+
+        # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
+        new_row = {'Metrics': column_total_text+' - ' + element}
+        new_row.update(count_vals.to_dict())
+        #new_row.update({'Whole dataset': whole_count})
+
+        # Creare un DataFrame con la riga corrente
+        tmp_df = pd.DataFrame(new_row, index=[0])
+
+        # Aggiungere il DataFrame corrente alla lista di DataFrame da concatenare
+        dfs_to_concat_sum.append(tmp_df)
+
+    #Creation of the taxonomic_table and addition of values ​​saved in the session.
+    MyUtility.workDict['taxonomic_table'] = []
+    if 'taxonomic_table1' in MyUtility.workDict:
+        MyUtility.workDict['taxonomic_table'].extend(MyUtility.workDict['taxonomic_table1'])
+    if 'taxonomic_table2' in MyUtility.workDict:
+        MyUtility.workDict['taxonomic_table'].extend(MyUtility.workDict['taxonomic_table2'])
+
     if 'taxonomic_table' in MyUtility.workDict:
       for column in MyUtility.workDict['taxonomic_table']:
-        # Filtrare il DataFrame per includere solo le righe in cui nella colonna selezionata è presente un valore
-        filtered_df = window.df[(window.df[column] != '') & (window.df[column].notna()) & (window.df[column] != 'unassigned')]
+          if column in window.df:
+            # Filtrare il DataFrame per includere solo le righe in cui nella colonna selezionata è presente un valore
+            filtered_df = window.df[(window.df[column] != '') & (window.df[column].notna()) & (window.df[column] != 'unassigned')]
 
-        #conto il totale delle righe che contengono il valore del quale conto le metriche
-        whole_count = filtered_df[column].count()
+            #conto il totale delle righe che contengono il valore del quale conto le metriche
+            whole_count = filtered_df[column].count()
 
-        ### Count ###
-        # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
-        count_vals = filtered_df[abundance_set].gt(0).sum()
+            ### Count ###
+            # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
+            count_vals = filtered_df[abundance_set].gt(0).sum()
 
-        # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-        new_row = {'Metrics': column_count_text+' - ' + column}
-        new_row.update(count_vals.to_dict())
-        new_row.update({'Whole dataset': whole_count})
+            # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
+            new_row = {'Metrics': column_count_text+' - ' + column}
+            new_row.update(count_vals.to_dict())
+            new_row.update({'Whole dataset': whole_count})
 
-        # Creare un DataFrame con la riga corrente
-        tmp_df = pd.DataFrame(new_row, index=[0])
+            # Creare un DataFrame con la riga corrente
+            tmp_df = pd.DataFrame(new_row, index=[0])
 
-        # Aggiungere il DataFrame corrente alla lista di DataFrame da concatenare
-        dfs_to_concat_count.append(tmp_df)
+            # Aggiungere il DataFrame corrente alla lista di DataFrame da concatenare
+            dfs_to_concat_count.append(tmp_df)
 
-        ### Sum ###
-        # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
-        count_vals = filtered_df[abundance_set].sum()
+            ### Sum ###
+            # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
+            count_vals = filtered_df[abundance_set].sum()
 
-        # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-        new_row = {'Metrics': column_total_text+' - ' + column}
-        new_row.update(count_vals.to_dict())
-        #new_row.update({'Whole dataset': whole_count})
+            # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
+            new_row = {'Metrics': column_total_text+' - ' + column}
+            new_row.update(count_vals.to_dict())
+            #new_row.update({'Whole dataset': whole_count})
 
-        # Creare un DataFrame con la riga corrente
-        tmp_df = pd.DataFrame(new_row, index=[0])
+            # Creare un DataFrame con la riga corrente
+            tmp_df = pd.DataFrame(new_row, index=[0])
 
-        # Aggiungere il DataFrame corrente alla lista di DataFrame da concatenare
-        dfs_to_concat_sum.append(tmp_df)
+            # Aggiungere il DataFrame corrente alla lista di DataFrame da concatenare
+            dfs_to_concat_sum.append(tmp_df)
 
-    ##### Count functional count #####
+    #Creation of the functional_table and functional_to_display and addition of values ​​saved in the session.
+    MyUtility.workDict['functional_table'] = []
+    MyUtility.workDict['functional_to_display'] = []
+    if 'functional_table1' in MyUtility.workDict:
+        MyUtility.workDict['functional_table'].extend(MyUtility.workDict['functional_table1'])
+        MyUtility.workDict['functional_to_display'].extend(MyUtility.workDict['functional_to_display1'])
+    if 'functional_table2' in MyUtility.workDict:
+        MyUtility.workDict['functional_table'].extend(MyUtility.workDict['functional_table2'])
+        MyUtility.workDict['functional_to_display'].extend(MyUtility.workDict['functional_to_display2'])
+
     if 'functional_table' in MyUtility.workDict:
       for column in MyUtility.workDict['functional_table']:
-        # Filtrare il DataFrame per includere solo le righe in cui nella colonna selezionata è presente un valore
-        filtered_df = window.df[(window.df[column] != '') & (window.df[column].notna()) & (window.df[column] != 'unassigned')]
+          if column in window.df:
+            # Filtrare il DataFrame per includere solo le righe in cui nella colonna selezionata è presente un valore
+            filtered_df = window.df[(window.df[column] != '') & (window.df[column].notna()) & (window.df[column] != 'unassigned')]
 
-        #conto il totale delle righe che contengono il valore del quale conto le metriche
-        whole_count = filtered_df[column].count()
-        
-        ### Count ###
-        # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
-        count_vals = filtered_df[abundance_set].gt(0).sum()
+            #conto il totale delle righe che contengono il valore del quale conto le metriche
+            whole_count = filtered_df[column].count()
+            
+            ### Count ###
+            # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
+            count_vals = filtered_df[abundance_set].gt(0).sum()
 
-        # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-        new_row = {'Metrics': column_count_text+' - ' + column}
-        new_row.update(count_vals.to_dict())
-        new_row.update({'Whole dataset': whole_count})
+            # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
+            new_row = {'Metrics': column_count_text+' - ' + column}
+            new_row.update(count_vals.to_dict())
+            new_row.update({'Whole dataset': whole_count})
 
-        # Creare un DataFrame con la riga corrente
-        tmp_df = pd.DataFrame(new_row, index=[0])
+            # Creare un DataFrame con la riga corrente
+            tmp_df = pd.DataFrame(new_row, index=[0])
 
-        # Aggiungere il DataFrame corrente alla lista di DataFrame da concatenare
-        dfs_to_concat_count.append(tmp_df)
+            # Aggiungere il DataFrame corrente alla lista di DataFrame da concatenare
+            dfs_to_concat_count.append(tmp_df)
 
-        ### Sum ###
-        # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
-        count_vals = filtered_df[abundance_set].sum()
+            ### Sum ###
+            # Calcolare il numero di valori > 0 e diversi da NaN per ogni colonna 'val_x' solo nelle righe filtrate
+            count_vals = filtered_df[abundance_set].sum()
 
-        # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
-        new_row = {'Metrics': column_total_text+' - ' + column}
-        new_row.update(count_vals.to_dict())
-        #new_row.update({'Whole dataset': whole_count})
+            # Creare un dizionario con la nuova riga contenente i nomi delle colonne e i relativi conteggi
+            new_row = {'Metrics': column_total_text+' - ' + column}
+            new_row.update(count_vals.to_dict())
+            #new_row.update({'Whole dataset': whole_count})
 
-        # Creare un DataFrame con la riga corrente
-        tmp_df = pd.DataFrame(new_row, index=[0])
+            # Creare un DataFrame con la riga corrente
+            tmp_df = pd.DataFrame(new_row, index=[0])
 
-        # Aggiungere il DataFrame corrente alla lista di DataFrame da concatenare
-        dfs_to_concat_sum.append(tmp_df)
+            # Aggiungere il DataFrame corrente alla lista di DataFrame da concatenare
+            dfs_to_concat_sum.append(tmp_df)
     
     ##### Add all row in new_df #####
     # Concatenare tutti i DataFrame nella lista in un unico DataFrame
-    new_df = pd.concat(dfs_to_concat_count+dfs_to_concat_sum, ignore_index=True)
+    new_df = pd.concat(dfs_to_concat_count + dfs_to_concat_sum, ignore_index=True)
 
     #save df tmp in the window
     window.df_tmp = new_df
@@ -573,8 +651,12 @@ class AsyncDownload_Aggregation(Thread):
     # Creare una lista vuota per contenere i DataFrame da concatenare
     dfs_to_concat = []
 
+    skip_columns = {"Description", "Master Protein Descriptions", "Lineage"}
+
     #get abundance colums name
-    abundance_set = list(self.df.filter(regex=r'F\d+'))
+    #abundance_set = list(self.df.filter(regex=r'F\d+'))
+    abundance_set = [c for c in self.df.columns if c.startswith("Abundance ")]
+
     # Convertire le colonne in numerico
     self.df[abundance_set] = self.df[abundance_set].apply(pd.to_numeric, errors='coerce')
     #create new df with the name of aboundances
@@ -590,7 +672,10 @@ class AsyncDownload_Aggregation(Thread):
     self.internetWork = True
 
     #list of COG category
-    self.df_cog = self.df.groupby(["COG_category", "COG name"]).size().reset_index(name="count")
+    try:
+      self.df_cog = self.df.groupby(["COG_category", "COG name"]).size().reset_index(name="count")
+    except:
+      self.df_cog = []
 
     #only if online search is request
     if(self.params["keggOnline"]):
@@ -638,7 +723,9 @@ class AsyncDownload_Aggregation(Thread):
     #for every list element create a file
     for element in self.my_list:
       #get all F cols
-      cols = list(self.df.filter(regex=r'F\d+'))
+      #cols = list(self.df.filter(regex=r'F\d+'))
+      cols = [c for c in self.df.columns if c.startswith("Abundance ")]
+
       #add in first place the col_name of column that i want aggragate
       cols.extend(element)
       #add Sequence column to avoid a problem with drop duplicate during the aggregation phase
@@ -668,7 +755,8 @@ class AsyncDownload_Aggregation(Thread):
         col_name = element[0]
 
         #get abundace colums
-        aboundance_cols = list(df_tmp.filter(regex=r'F\d+'))
+        #aboundance_cols = list(df_tmp.filter(regex=r'F\d+'))
+        aboundance_cols = [c for c in df_tmp.columns if c.startswith("Abundance ")]
 
         #re put nan in empty cells
         df_tmp[aboundance_cols] = df_tmp[aboundance_cols].replace({0:np.nan})
@@ -684,16 +772,31 @@ class AsyncDownload_Aggregation(Thread):
           df_tmp_sup = df_tmp_sup.astype({col_name: 'str'})
 
           if(self.params["mode"] == "PSMs"):
-            df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name].str.split('[,;]'))
-              .explode('new_col')
-              .groupby('new_col', as_index=False)
-              .count())
+            #skips the columns that should not be split
+            if col_name not in skip_columns:
+                df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name].str.split('[,;]'))
+                  .explode('new_col')
+                  .groupby('new_col', as_index=False)
+                  .count())
+            else:
+                df_tmp_sup = (df_tmp_sup
+                  .assign(new_col=df_tmp_sup[col_name])
+                  .groupby('new_col', as_index=False)
+                  .count())
           else: #Proteins/Peptides
-            df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name].str.split('[,;]'))
-              .explode('new_col')
-              .drop_duplicates()
-              .groupby('new_col', as_index=False)
-              .count())
+            #skips the columns that should not be split
+            if col_name not in skip_columns:
+                df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name].str.split('[,;]'))
+                  .explode('new_col')
+                  .drop_duplicates()
+                  .groupby('new_col', as_index=False)
+                  .count())
+            else:
+                df_tmp_sup = (df_tmp_sup
+                  .assign(new_col=df_tmp_sup[col_name])
+                  .drop_duplicates()
+                  .groupby('new_col', as_index=False)
+                  .count())
 
           #edit final_path_sup
           exstension = ""
@@ -726,17 +829,32 @@ class AsyncDownload_Aggregation(Thread):
 
         #create the new file with the sum of aboundances
         if(self.params["mode"] == "PSMs"):
-          df_tmp = (df_tmp.assign(new_col=df_tmp[col_name].str.split('[,;]'))
-            .explode('new_col')
-            .groupby('new_col', as_index=False)
-            .sum(min_count=1))
+            #skips the columns that should not be split
+            if col_name not in skip_columns:
+                df_tmp = (df_tmp.assign(new_col=df_tmp[col_name].str.split('[,;]'))
+                  .explode('new_col')
+                  .groupby('new_col', as_index=False)
+                  .sum(min_count=1))
+            else:
+                df_tmp = (df_tmp
+                   .assign(new_col=df_tmp[col_name])
+                   .groupby('new_col', as_index=False)
+                   .sum(min_count=1))
+
         else: #Proteins/Peptides
-          #create the new file with the sum of aboundances
-          df_tmp = (df_tmp.assign(new_col=df_tmp[col_name].str.split('[,;]'))
-            .explode('new_col')
-            .drop_duplicates()
-            .groupby('new_col', as_index=False)
-            .sum(min_count=1))
+            #skips the columns that should not be split
+            if col_name not in skip_columns:
+                df_tmp = (df_tmp.assign(new_col=df_tmp[col_name].str.split('[,;]'))
+                  .explode('new_col')
+                  .drop_duplicates()
+                  .groupby('new_col', as_index=False)
+                  .sum(min_count=1))
+            else:
+                df_tmp = (df_tmp
+                      .assign(new_col=df_tmp[col_name])
+                      .drop_duplicates()
+                      .groupby('new_col', as_index=False)
+                      .sum(min_count=1))
 
         #rename the tmp col use to explode
         df_tmp.rename(columns = {col_name:'old_col'}, inplace = True)
@@ -829,7 +947,7 @@ class AsyncDownload_Aggregation(Thread):
         col_name_2 = element[1]
 
         #get abundace colums
-        aboundance_cols = list(df_tmp.filter(regex=r'F\d+'))
+        aboundance_cols = [c for c in df_tmp.columns if c.startswith("Abundance ")]
 
         #re put nan in empty cells
         df_tmp[aboundance_cols] = df_tmp[aboundance_cols].replace({0:np.nan})
@@ -845,16 +963,32 @@ class AsyncDownload_Aggregation(Thread):
           df_tmp_sup = df_tmp_sup.astype({col_name_2: 'str'})
 
           if(self.params["mode"] == "PSMs"):
-            df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name_2].str.split('[,;]'))
-              .explode('new_col')
-              .groupby([col_name_1, 'new_col'], as_index=False)
-              .count())
+            #skips the columns that should not be split
+            if col_name_2 not in skip_columns:
+                df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name_2].str.split('[,;]'))
+                  .explode('new_col')
+                  .groupby([col_name_1, 'new_col'], as_index=False)
+                  .count())
+            else:
+                df_tmp_sup = (df_tmp_sup
+                      .assign(new_col=df_tmp_sup[col_name_2])
+                      .groupby([col_name_1, 'new_col'], as_index=False)
+                      .count())
+
           else: #Proteins/Peptides
-              df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name_2].str.split('[,;]'))
-              .explode('new_col')
-              .drop_duplicates()
-              .groupby([col_name_1, 'new_col'], as_index=False)
-              .count())
+            #skips the columns that should not be split
+            if col_name_2 not in skip_columns:
+                df_tmp_sup = (df_tmp_sup.assign(new_col=df_tmp_sup[col_name_2].str.split('[,;]'))
+                  .explode('new_col')
+                  .drop_duplicates()
+                  .groupby([col_name_1, 'new_col'], as_index=False)
+                  .count())
+            else:
+                df_tmp_sup = (df_tmp_sup
+                      .assign(new_col=df_tmp_sup[col_name_2])
+                      .drop_duplicates()
+                      .groupby([col_name_1, 'new_col'], as_index=False)
+                      .count())
 
           #edit final_path_sup
           exstension = ""
@@ -887,16 +1021,32 @@ class AsyncDownload_Aggregation(Thread):
         
         #create the new file with the sum of aboundaces
         if(self.params["mode"] == "PSMs"):
-          df_tmp = (df_tmp.assign(new_col=df_tmp[col_name_2].str.split('[,;]'))
-            .explode('new_col')
-            .groupby([col_name_1, 'new_col'], as_index=False)
-            .sum(min_count=1))
+            #skips the columns that should not be split
+            if col_name_2 not in skip_columns:
+                df_tmp = (df_tmp.assign(new_col=df_tmp[col_name_2].str.split('[,;]'))
+                  .explode('new_col')
+                  .groupby([col_name_1, 'new_col'], as_index=False)
+                  .sum(min_count=1))
+            else:
+                df_tmp = (df_tmp
+                      .assign(new_col=df_tmp[col_name_2])
+                      .groupby([col_name_1, 'new_col'], as_index=False)
+                      .sum(min_count=1))
+
         else: #Proteins/Peptides
-          df_tmp = (df_tmp.assign(new_col=df_tmp[col_name_2].str.split('[,;]'))
-            .explode('new_col')
-            .drop_duplicates()
-            .groupby([col_name_1, 'new_col'], as_index=False)
-            .sum(min_count=1))
+            #skips the columns that should not be split
+            if col_name_2 not in skip_columns:
+                df_tmp = (df_tmp.assign(new_col=df_tmp[col_name_2].str.split('[,;]'))
+                  .explode('new_col')
+                  .drop_duplicates()
+                  .groupby([col_name_1, 'new_col'], as_index=False)
+                  .sum(min_count=1))
+            else:
+                df_tmp = (df_tmp
+                      .assign(new_col=df_tmp[col_name_2])
+                      .drop_duplicates()
+                      .groupby([col_name_1, 'new_col'], as_index=False)
+                      .sum(min_count=1))
 
         #rename the tmp col use to explode
         df_tmp.rename(columns = {col_name_2:'old_col'}, inplace = True)
@@ -1018,7 +1168,9 @@ class AsyncDownload_Aggregation(Thread):
       #control to put zero in empty cells 
       if(self.params['fill0'] == 1):
         #get abundace colums
-        sub_set = list(df_tmp.filter(regex=r'F\d+'))
+        #sub_set = list(df_tmp.filter(regex=r'F\d+'))
+        sub_set = [c for c in df_tmp.columns if c.startswith("Abundance ")]
+
         df_tmp[sub_set] = df_tmp[sub_set].fillna(0)
         if(self.params["sup_tab"]):
           df_tmp_sup[sub_set] = df_tmp_sup[sub_set].fillna(0)
@@ -1086,6 +1238,9 @@ class AsyncDownload_Aggregation(Thread):
       tmp_df = pd.DataFrame(new_row, index=[0])
       #aggiungo al vettore dei risultati
       dfs_to_concat.append(tmp_df)
+
+      df_tmp = df_tmp.fillna(0)
+      df_tmp_sup = df_tmp_sup.fillna(0)
 
       #save files
       try:
@@ -1187,7 +1342,7 @@ class AsyncRenameFile(Thread):
         self.fileSaved = False
 
       #take the old list of "F*" value in order
-      cols_len = len(list(df.filter(regex=r'F\d+')))
+      cols_len = len([c for c in df.columns if c.startswith("Abundance ")])
       
       #check lenght
       if( cols_len == len_template ):
@@ -1197,7 +1352,8 @@ class AsyncRenameFile(Thread):
 
         #the columns are sorted according to the template
         #take the old list of "F*" value in order
-        old_cols = list(df.filter(regex=r'F\d+'))
+        old_cols = [c for c in df.columns if c.startswith("Abundance ")]
+
         #calculate name before and after the "f*" coloums
         before_cols = [col for col in df.columns if df.columns.get_loc(col) < df.columns.get_loc(old_cols[0])]
         after_cols = [col for col in df.columns if df.columns.get_loc(col) > df.columns.get_loc(old_cols[-1])]
@@ -1209,8 +1365,6 @@ class AsyncRenameFile(Thread):
 
         #check to save file  
         try:
-         
-
           #file_path_without_extension, file_extension = self.file.name.rsplit(".", 1)
           if file_extension == "xlsx":
             df.to_excel(filepath, index=False)
@@ -1234,10 +1388,30 @@ class ManageData(Thread):
     self.window = window
 
   def run(self):
+    #initialize taxonomic_columns and functional_columns
+    MyUtility.workDict["taxonomic_columns"] = []
+    MyUtility.workDict["functional_columns"] = []
+
     #take a copy of window to do controls
     window = self.window
     #create a copy for finale edits
     df_final = window.df.copy()
+
+    MyUtility.workDict["normalize"] = config.normalize_10
+    if(MyUtility.workDict["input_type"] == 'fragpipe'):
+      #insert Organism and Lineage columns if not exist
+      if 'Organism' not in df_final.columns:
+          df_final['Organism'] = ''
+      if 'Lineage' not in df_final.columns:
+          df_final['Lineage'] = ''    
+  
+      #change base of normalize 
+      if(MyUtility.workDict["mode"] == 'Proteins'):
+        if(window.opt_quantitative_var.get().lower()=="total spectral count" or window.opt_quantitative_var.get().lower()=="unique spectral count" or window.opt_quantitative_var.get().lower()=="spectral count"):
+          MyUtility.workDict["normalize"] = config.normalize_4
+      if(MyUtility.workDict["mode"] == 'Peptides'):
+        if(window.opt_quantitative_var.get().lower()=="spectral count"):
+          MyUtility.workDict["normalize"] = config.normalize_4
 
     #function for concatenate values
     def join_unique(x):
@@ -1247,24 +1421,79 @@ class ManageData(Thread):
           return '; '.join(set(x))
 
     #Solve problem with row that contains the same sequence value
-    if( (MyUtility.workDict["input_type"] == 'mzTab') and (MyUtility.workDict["mode"] == 'Peptides') ):
-      #take the aboundance sub set
-      sub_set = list(df_final.filter(regex=r'Abundance F\d+'))
-      #create a list with a column list that need to be equal in first phase
-      column_list = ['Sequence']+sub_set
+    columnProteinName = ""
 
-      #PHASE_1# Group by if all columns in column_list are equal and join the different Accession
-      df_final = df_final.groupby(column_list).agg({'Master Protein Accessions': join_unique}).reset_index()
+    #select column name fo protein
+    if(MyUtility.workDict["mode"] == 'Proteins'):
+      columnProteinName = 'Accession'
+
+    if(MyUtility.workDict["mode"] == 'Peptides'):
+      columnProteinName = 'Master Protein Accessions'
+
+    if(MyUtility.workDict["input_type"] == 'mzTab'):
+      if(MyUtility.workDict["mode"] == 'Peptides'):
+        #take the aboundance sub set
+        #sub_set = list(df_final.filter(regex=r'Abundance F\d+'))
+        sub_set = [c for c in df_final.columns if c.startswith("Abundance ")]
+  
+        #create a list with a column list that need to be equal in first phase
+        column_list = ['Sequence']+sub_set
+    
+        #PHASE_1# Group by if all columns in column_list are equal and join the different Accession
+        df_final = df_final.groupby(column_list).agg({'Master Protein Accessions': join_unique}).reset_index()
+        
+        #PHASE2# Sum row whit same Sequence
+        agg_dict = {name: 'sum' for name in sub_set}
+        df_final = df_final.groupby('Sequence').agg({**agg_dict, **{col: 'first' for col in df_final.columns if col not in agg_dict}}).set_index('Sequence')
+        df_final = df_final.reset_index()
+    
+        #put Accession in second coulumn
+        all_cols = list(df_final.columns)
+        all_cols.insert(1, all_cols.pop(all_cols.index('Master Protein Accessions')))
+        df_final = df_final.reindex(columns=all_cols)
+
+
+
+    if(MyUtility.workDict["input_type"] == 'fragpipe'):
+      #Any "samples" to be excluded (aggregates, totals, etc.)
+      EXCLUDE_SAMPLES = {"Combined"}
       
-      #PHASE2# Sum row whit same Sequence
-      agg_dict = {name: 'sum' for name in sub_set}
-      df_final = df_final.groupby('Sequence').agg({**agg_dict, **{col: 'first' for col in df_final.columns if col not in agg_dict}}).set_index('Sequence')
-      df_final = df_final.reset_index()
+      #Build the map: typology -> set of samples that have it
+      map_type_to_samples = defaultdict(set)
+      
+      for col in map(str, df_final.columns):
+          if " " in col:
+              sample, typology = col.split(" ", 1)  # split on first space
+              sample = sample.strip()
+              typology = typology.strip()
+              if sample not in EXCLUDE_SAMPLES:
+                  map_type_to_samples[typology].add(sample)
+      
+      #Consider "abundance types" those that appear on >= 2 samples
+      abundance_types = sorted([t for t, S in map_type_to_samples.items() if len(S) >= 2 ])
+      
+      #The samples are all those who have at least one valid typology
+      samples = sorted({s for t in abundance_types for s in map_type_to_samples[t]})
+      
+      #print("Campioni:", samples)
+      #print("Tipologie di abbondanza:", abundance_types)
 
-      #put Accession in second coulumn
-      all_cols = list(df_final.columns)
-      all_cols.insert(1, all_cols.pop(all_cols.index('Master Protein Accessions')))
-      df_final = df_final.reindex(columns=all_cols)
+      i=0
+      for sample in samples:
+        for abundance_type in abundance_types:
+          old_column = sample + " " + abundance_type
+          if(abundance_type != window.opt_quantitative_var.get()):
+            df_final = df_final.drop(columns=[old_column], errors="ignore")
+          else:
+            i = i + 1
+            #new_column = "Abundance F" + str(i) + " " +  sample
+            new_column = "Abundance F" + str(i) 
+            df_final = df_final.rename(columns={old_column: new_column})
+
+      #take the aboundance sub set
+      sub_set = [c for c in df_final.columns if c.startswith("Abundance ")]
+
+
 
     #control for Protein FDR (Confidence)
     if( hasattr(window, 'frame_confidence') and (window.frame_confidence.grid_info() != {}) ):
@@ -1279,6 +1508,12 @@ class ManageData(Thread):
       if(window.var_chc_high.get() == 0 ):
         df_final.drop(df_final.index[df_final[condidence_column_name] == 'High'], inplace=True)
     
+    #control for delete all zeros
+    if( hasattr(window, 'chc_delete_all_zeros') and (window.chc_delete_all_zeros.grid_info() != {}) ):
+      if(window.var_chc_delete_all_zeros.get() == 1):
+        cols_to_delete = df_final.filter(like='Abundance').columns
+        df_final = df_final[(df_final[cols_to_delete] != 0).any(axis=1)]
+
     #control for normalized
     if( hasattr(window, 'chc_normalized') and (window.chc_normalized.grid_info() != {}) ):
       if(window.var_chc_normalized.get() == 1):
@@ -1301,6 +1536,17 @@ class ManageData(Thread):
 
       df_final = df_final.rename(columns=lambda col: rename_columns(col))
 
+    #control for Re-Normalized choose before filter
+    if( hasattr(window, 'chc_re_normalized_choose') and (window.chc_re_normalized_choose.grid_info() != {}) ):
+      if( hasattr(window, 'opt_re_normalized_choose') and (window.opt_re_normalized_choose.grid_info() != {}) ):
+        if(window.var_chc_re_normalized_choose.get() == 1 and window.opt_re_normalized_choose_var.get() == 'based on total abundance of all proteins (before filtering)'):
+          #RE-Normalize all columns
+          for col_name in sub_set:
+            if(df_final[col_name].sum()>0):
+              df_final[col_name] = ( df_final[col_name]/df_final[col_name].sum() ) * MyUtility.workDict["normalize"]
+            else:
+              df_final[col_name] = 0
+
     #Control for description
     if( hasattr(window, 'frame_description') and (window.frame_description.grid_info() != {}) ):
       #find the correct name for the filtre
@@ -1315,14 +1561,30 @@ class ManageData(Thread):
       toSearch = []
       for con_item in get_content:
         toSearch.append(con_item)
-      #delete rows that do not contain any words in the column
-      if(window.rdb_var.get()=='or'):
-        df_final = df_final[df_final[description_name].str.contains('|'.join(toSearch)) == True]
-      elif(window.rdb_var.get()=='and'):
-        base = r'^{}'
-        expr = '(?=.*{})'
-        toSearch = base.format(''.join(expr.format(w) for w in toSearch))
-        df_final = df_final[df_final[description_name].str.contains(toSearch) == True]
+
+      #if toSearch is not epty
+      if toSearch:
+         #if condition is "and"
+         if(window.rdb_condition_var.get()=='and'):
+           col = df_final[description_name].astype(str)
+           mask = pd.Series(True, index=df_final.index)
+           for term in toSearch:
+             escaped = re.escape(term)
+             mask &= col.str.contains(escaped, regex=True, case=False, na=False)
+         else:
+           escaped = [re.escape(s) for s in toSearch]
+           pattern = '|'.join(escaped)
+           mask = df_final[description_name].str.contains(pattern, regex=True, case=False, na=False)
+
+         #Keep what does or dosen't match
+         if(window.rdb_filter_var.get()=='in'):
+           df_final = df_final[mask]
+         else:
+           df_final = df_final[~mask]
+      else:
+         # toSearch vuoto: nessun termine da escludere → tieni tutto (comportamento consigliato)
+         df_final = df_final
+      
       #finally edit the cells for remove "newline"(\n) and put ";"
       df_final[description_name] = df_final[description_name].str.replace("\n","; ")
     
@@ -1338,33 +1600,30 @@ class ManageData(Thread):
     
     #control for marked as (Marker)
     if( hasattr(window, 'frame_marker') and (window.frame_marker.grid_info() != {}) ):
-      if('Marked as' in df_final.columns):
-        i = 0
-        for marked in window.scl_check_marker.chcs:
-          if(window.scl_check_marker.var_chcs[i].get() == 0):
-            if(marked.cget("text") == "Empty"):
-              df_final = df_final.dropna(subset=['Marked as'])
-            else:
-              #print(marked.cget("text"))
-              df_final.drop(df_final.index[df_final['Marked as'] == marked.cget("text")], inplace=True)
-          i = i+1
+      df_final = window.scl_check_marker.filterDataframe(df_final, 'Marked as')
+   
+    #control for database as (Database)
+    if( hasattr(window, 'frame_database1') and (window.frame_database1.grid_info() != {}) ):
+      df_final = window.scl_database1_filter.filterDataframe(df_final, 'Database')
+   
+    #control for database as (Organism/Lineage)
+    if( hasattr(window, 'frame_database2') and (window.frame_database2.grid_info() != {}) ):
+      df_final = window.scl_database2_organism.filterDataframe(df_final, 'Organism')
+      df_final = window.scl_database2_lineage.filterDataframe(df_final, 'Lineage')
     
     #control for Quan Info
     if( hasattr(window, 'frame_quanInfo') and (window.frame_quanInfo.grid_info() != {}) ):
-      i = 0
-      for quan in window.scl_check_quantInfo.chcs:
-        if(window.scl_check_quantInfo.var_chcs[i].get() == 0):
-          df_final.drop(df_final.index[df_final['Quan Info'] == quan.cget("text")], inplace=True)
-        i = i+1
+      df_final = window.scl_check_quantInfo.filterDataframe(df_final, 'Quan Info')
 
       #get abundace colums
-      sub_set = list(df_final.filter(regex=r'F\d+'))
+      sub_set = [c for c in df_final.columns if c.startswith("Abundance ")]
     
     #Control only for peptide on Protoemoe Discovery
     if( (MyUtility.workDict["input_type"] == 'proteome') and (MyUtility.workDict["mode"] == 'Peptides') ):
       #remove duplicate Sequence (cause of Protoeme Discovery bug)
       #create a list for Abundance cols
-      abn_list = list(df_final.filter(regex=r'F\d+'))
+      abn_list = [c for c in df_final.columns if c.startswith("Abundance ")]
+
       #create a list for all cols
       c_list = list(df_final.columns)
       #remove Sequence (because used for groupby)
@@ -1392,34 +1651,61 @@ class ManageData(Thread):
       df_final.insert(1, 'Master Protein Accessions', master_col)
     
     #create abundace colums after drop some
-    sub_set = list(df_final.filter(regex=r'F\d+'))
+    #sub_set = list(df_final.filter(regex=r'F\d+'))
+    sub_set = [c for c in df_final.columns if c.startswith("Abundance ")]
+
+    if( hasattr(window, 'frame_samples') and (window.frame_samples.grid_info() != {}) ):
+      abundance_cols = [col for col in df_final.columns if col.startswith("Abundance ")]
+      selectedItems = window.scl_samples.selectedItems()
+      selected_abundance = ["Abundance " + item for item in selectedItems]
+      
+      sub_set = [c for c in selected_abundance]
+
 
     #if we are on mzTab, convert string in integer for abundance
     if(MyUtility.workDict["input_type"] == 'mzTab' ):
       df_final[sub_set] = df_final[sub_set].apply(pd.to_numeric, errors='coerce')
 
+    if(MyUtility.workDict['input_type'] == 'fragpipe'):
+      df_final[sub_set] = df_final[sub_set].replace(0, np.nan)
+
     #control for abundance
     if( hasattr(window, 'frame_validValues') and (window.frame_validValues.grid_info() != {}) ):
       num_abundance = 0
+      num_set = int(window.ntr_abundance.get())
       if(window.opt_abundance_var.get() == 'Absolute'):
-        num_abundance = int(window.ntr_abundance.get())
+        if(num_set > len(sub_set)):
+          num_set = len(sub_set)
+        num_abundance = num_set
       elif(window.opt_abundance_var.get() == 'Percentage'):
+        if(num_set > 100):
+          num_set = 100
         #get number of columns
         num_cols = len(sub_set)
         #calcolate num
-        num_abundance = window.proper_round((int(window.ntr_abundance.get()) * num_cols)/100)
+        num_abundance = window.proper_round((num_set * num_cols)/100)
       #delete all row width 'num_cols' empty in Aboundance(F1,F2..) columns
       df_final = df_final.dropna(subset=sub_set, thresh=num_abundance)
     
     #recreate abundace colums after drop some
-    sub_set = list(df_final.filter(regex=r'F\d+'))
+    sub_set = [c for c in df_final.columns if c.startswith("Abundance ")]
 
     #control for Re-Normalized
     if( hasattr(window, 'chc_re_normalized')  and (window.chc_re_normalized.grid_info() != {}) ):
       if(window.var_chc_re_normalized.get() == 1):
         #RE-Normalize all colums
         for col_name in sub_set:
-          df_final[col_name] = ( df_final[col_name]/df_final[col_name].sum() ) * 10000000000
+          if(df_final[col_name].sum()>0):
+            df_final[col_name] = ( df_final[col_name]/df_final[col_name].sum() ) * MyUtility.workDict["normalize"]
+          else:
+            df_final[col_name] = 0
+
+    #control for Re-Normalized choose after filter
+    normalize = False
+    if( hasattr(window, 'chc_re_normalized_choose') and (window.chc_re_normalized_choose.grid_info() != {}) ):
+      if( hasattr(window, 'opt_re_normalized_choose') and (window.opt_re_normalized_choose.grid_info() != {}) ):
+        if(window.var_chc_re_normalized_choose.get() == 1 and window.opt_re_normalized_choose_var.get() != 'based on total abundance of all proteins (before filtering)'):
+          normalize = True
 
     #Control only for PSMs on Protoemoe Discovery
     if( (MyUtility.workDict["input_type"] == 'proteome') and (MyUtility.workDict["mode"] == 'PSMs') ):
@@ -1498,12 +1784,28 @@ class ManageData(Thread):
       df_final.insert(1, 'Master Protein Accessions', master_col)
     
     #recreate abundace colums for fill 0 in PSMs mode
-    sub_set = list(df_final.filter(regex=r'F\d+'))
+    sub_set = [c for c in df_final.columns if c.startswith("Abundance ")]
+
     #control to put zero in empty cells
     if( hasattr(window, 'chc_fill_zero') and (window.chc_fill_zero.grid_info() != {}) ):
       if(window.var_chc_fill_zero.get() == 1):
         df_final[sub_set] = df_final[sub_set].fillna(0)
-    
+
+    #control to put empty in zero cells
+    if( hasattr(window, 'chc_fill_empty') and (window.chc_fill_empty.grid_info() != {}) ):
+      if(window.var_chc_fill_empty.get() == 0):
+        df_final[sub_set] = df_final[sub_set].fillna(0)
+
+    #control to delete Protein ID column
+    if( hasattr(window, 'chc_fill_show_protein_id') and (window.chc_fill_show_protein_id.grid_info() != {}) ):
+      if(window.var_chc_fill_show_protein_id.get() == 0):
+        df_final = df_final.drop(columns=["Protein ID"], errors="ignore")
+
+    #control to delete mapped_proteins column
+    if( hasattr(window, 'chc_fill_show_mapped_proteins') and (window.chc_fill_show_mapped_proteins.grid_info() != {}) ):
+      if(window.var_chc_fill_show_mapped_proteins.get() == 0):
+        df_final = df_final.drop(columns=["Mapped Proteins"], errors="ignore")
+
     #Final Reorder
     if( (MyUtility.workDict["input_type"] == 'proteome') or (MyUtility.workDict["input_type"] == 'mzTab') ):
       if(MyUtility.workDict["mode"] == 'Proteins'):
@@ -1516,9 +1818,56 @@ class ManageData(Thread):
         #before save, reorder file according to "Sequence" column
         df_final = df_final.sort_values('Sequence')
 
+    if(columnProteinName!=""):
+      # Convert to string (handles NaN better) and split
+      parts = df_final[columnProteinName].astype("string").str.split("|")
+
+      # Optional: Remove spaces from each part
+      parts = parts.apply(lambda lst: [x.strip() for x in lst] if isinstance(lst, list) else lst)
+
+      # If len == 1 take element 0, otherwise take element 1 (the second one)
+      df_final[columnProteinName] = parts.str.get(0).where(parts.str.len() == 1, parts.str.get(1))
+
+      # Normalize empty strings to NaN (if you prefer to treat them as missing)
+      df_final[columnProteinName] = df_final[columnProteinName].replace("", pd.NA)
+
+    ##control samples
+    if( hasattr(window, 'frame_samples') and (window.frame_samples.grid_info() != {}) ):
+      abundance_cols = [col for col in df_final.columns if col.startswith("Abundance ")]
+      selectedItems = window.scl_samples.selectedItems()
+      selectedItemsDescription = window.scl_samples.selectedItemsDescription()
+      selected_abundance = [col for col in abundance_cols if col.replace("Abundance ", "") in selectedItems]
+      selected_abundance_description = ["Abundance " + item for item in selectedItemsDescription]
+      other_cols = [col for col in df_final.columns if not col.startswith("Abundance ")]
+      df_final = df_final[other_cols + selected_abundance]
+      
+      if len(selected_abundance) != len(selected_abundance_description):
+          raise ValueError(
+              "The two lists must have the same length: "
+              f"{len(selected_abundance)=} vs {len(selected_abundance_description)=}"
+          )
+      
+      rename_map = {
+          old: new
+          for old, new in zip(selected_abundance, selected_abundance_description)
+          if old in df_final.columns
+      }
+    
+      seen = {}
+      uniq_rename_map = {}
+      for old, new in rename_map.items():
+          if new not in seen:
+              seen[new] = 0
+              uniq_rename_map[old] = new
+          else:
+              seen[new] += 1
+              uniq_rename_map[old] = f"{new}.{seen[new]}"  
+      
+      df_final = df_final.rename(columns=uniq_rename_map)
+      
 
     #save edit df in tmp variable
-    window.df_tmp = df_final
+    window.df_tmp = reorder_dataframe(df_final, normalize)
 
 class ManageDataDynamic(Thread):
   def __init__(self, window):
@@ -1528,23 +1877,33 @@ class ManageDataDynamic(Thread):
     self.window = window
 
   def run(self):
+    MyUtility.workDict["taxonomic_columns"] = []
+    MyUtility.workDict["functional_columns"] = []
+
     #take a copy of window to do controls
     window = self.window
     #create a copy for finale edits
     df_final = window.df.copy()
 
+    if 'Organism' not in df_final.columns:
+        df_final['Organism'] = ''
+    if 'Lineage' not in df_final.columns:
+        df_final['Lineage'] = ''    
+  
+    MyUtility.workDict["normalize"] = config.normalize_10
+
     #Control for rename columns
     #Protein Acession
-    columnName = ""
+    columnProteinName = ""
     if( hasattr(window, 'frame_proteinAccession') ):
       old_name = window.proteinAccession_listbox.get(0, tk.END)[0]
       # Rinominiamo la colonna
       if(MyUtility.workDict['mode'] == 'Proteins'):
         df_final = df_final.rename(columns={old_name: 'Accession'})
-        columnName = 'Accession'
+        columnProteinName = 'Accession'
       else:
         df_final = df_final.rename(columns={old_name: 'Master Protein Accessions'})
-        columnName = 'Master Protein Accessions'
+        columnProteinName = 'Master Protein Accessions'
 
     #Peptide Sequence
     if( hasattr(window, 'frame_peptideSequence') ):
@@ -1569,34 +1928,50 @@ class ManageDataDynamic(Thread):
     df_final = df_final.drop(existing_columns, axis=1)
 
     #create abundace colums after drop some
-    sub_set = list(df_final.filter(regex=r'F\d+'))
+    sub_set = [c for c in df_final.columns if c.startswith("Abundance ")]
 
     #Convert string in integer for abundance
     df_final[sub_set] = df_final[sub_set].apply(pd.to_numeric, errors='coerce')
 
     #control for abundance
+    df_final[sub_set] = df_final[sub_set].replace(0, np.nan)
+
+    #control if exists frame_validValues
     if( hasattr(window, 'frame_validValues') and (window.frame_validValues.grid_info() != {}) ):
       num_abundance = 0
+      num_set = int(window.ntr_abundance.get())
       if(window.opt_abundance_var.get() == 'Absolute'):
-        num_abundance = int(window.ntr_abundance.get())
+        if(num_set > len(sub_set)):
+          num_set = len(sub_set)
+        num_abundance = num_set
       elif(window.opt_abundance_var.get() == 'Percentage'):
+        if(num_set > 100):
+          num_set = 100
         #get number of columns
         num_cols = len(sub_set)
         #calcolate num
-        num_abundance = window.proper_round((int(window.ntr_abundance.get()) * num_cols)/100)
+        num_abundance = window.proper_round((num_set * num_cols)/100)
       #delete all row width 'num_cols' empty in Aboundance(F1,F2..) columns
       df_final = df_final.dropna(subset=sub_set, thresh=num_abundance)
     
     #recreate abundace colums after drop some
-    sub_set = list(df_final.filter(regex=r'F\d+'))
+    sub_set = [c for c in df_final.columns if c.startswith("Abundance ")]
+    
+    #control for delete all zeros
+    if( hasattr(window, 'chc_delete_all_zeros') and (window.chc_delete_all_zeros.grid_info() != {}) ):
+      if(window.var_chc_delete_all_zeros.get() == 1):
+        cols_to_delete = df_final.filter(like='Abundance').columns
+        df_final = df_final[(df_final[cols_to_delete] != 0).any(axis=1)]
 
     #control for Re-Normalized
     if( hasattr(window, 'chc_re_normalized')  and (window.chc_re_normalized.grid_info() != {}) ):
       if(window.var_chc_re_normalized.get() == 1):
         #RE-Normalize all colums
         for col_name in sub_set:
-          df_final[col_name] = ( df_final[col_name]/df_final[col_name].sum() ) * 10000000000
-
+          if(df_final[col_name].sum()>0):
+            df_final[col_name] = ( df_final[col_name]/df_final[col_name].sum() ) * MyUtility.workDict["normalize"]
+          else:
+            df_final[col_name] = 0
 
     #Control only for PSMs on Protoemoe Discovery
     if(MyUtility.workDict["mode"] == 'PSMs'):
@@ -1633,6 +2008,21 @@ class ManageDataDynamic(Thread):
       if(window.var_chc_fill_zero.get() == 1):
         df_final[sub_set] = df_final[sub_set].fillna(0)
 
+    #control to put empty in zero cells
+    if( hasattr(window, 'chc_fill_empty') and (window.chc_fill_empty.grid_info() != {}) ):
+      if(window.var_chc_fill_empty.get() == 0):
+        df_final[sub_set] = df_final[sub_set].fillna(0)
+
+    #control to delete Protein ID column
+    if( hasattr(window, 'chc_fill_show_protein_id') and (window.chc_fill_show_protein_id.grid_info() != {}) ):
+      if(window.var_chc_fill_show_protein_id.get() == 0):
+        df_final = df_final.drop(columns=["Protein ID"], errors="ignore")
+
+    #control to delete mapped_proteins column
+    if( hasattr(window, 'chc_fill_show_mapped_proteins') and (window.chc_fill_show_mapped_proteins.grid_info() != {}) ):
+      if(window.var_chc_fill_show_mapped_proteins.get() == 0):
+        df_final = df_final.drop(columns=["Mapped Proteins"], errors="ignore")
+
     #Final Reorder
     if(MyUtility.workDict["mode"] == 'Proteins'):
       #before save, reorder file according to "Accession" column
@@ -1644,21 +2034,21 @@ class ManageDataDynamic(Thread):
       #before save, reorder file according to "Sequence" column
       df_final = df_final.sort_values('Sequence')
     
-    if(columnName!=""):
+    if(columnProteinName!=""):
       # Convert to string (handles NaN better) and split
-      parts = df_final[columnName].astype("string").str.split("|")
+      parts = df_final[columnProteinName].astype("string").str.split("|")
 
       # Optional: Remove spaces from each part
       parts = parts.apply(lambda lst: [x.strip() for x in lst] if isinstance(lst, list) else lst)
 
       # If len == 1 take element 0, otherwise take element 1 (the second one)
-      df_final[columnName] = parts.str.get(0).where(parts.str.len() == 1, parts.str.get(1))
+      df_final[columnProteinName] = parts.str.get(0).where(parts.str.len() == 1, parts.str.get(1))
 
       # Normalize empty strings to NaN (if you prefer to treat them as missing)
-      df_final[columnName] = df_final[columnName].replace("", pd.NA)
+      df_final[columnProteinName] = df_final[columnProteinName].replace("", pd.NA)
 
     #save edit df in tmp variable
-    window.df_tmp = df_final
+    window.df_tmp = reorder_dataframe(df_final)
     
 #class to manage file on Taxonomic window
 class ManageTaxonomic(Thread):
@@ -1669,6 +2059,8 @@ class ManageTaxonomic(Thread):
     self.window = window
 
   def run(self):
+    MyUtility.workDict["taxonomic_columns"] = []
+
     #take a copy of window to do controls
     window = self.window
     #create a copy for finale edits
@@ -1711,10 +2103,12 @@ class ManageTaxonomic(Thread):
         df_final.drop(['peptide'], inplace=True, axis=1, errors='ignore')
 
 
+
     #control to put zero in empty cells 
     if(MyUtility.workDict['fill0'] == 1):
       #get abundace colums
-      sub_set = list(df_final.filter(regex=r'F\d+'))
+      sub_set = [c for c in df_final.columns if c.startswith("Abundance ")]
+
       df_final[sub_set] = df_final[sub_set].fillna(0)
 
     #check if fill empty cells in annotation
@@ -1726,12 +2120,20 @@ class ManageTaxonomic(Thread):
       # Sostituisci le stringhe vuote ('') con "unassigned" nelle colonne di interesse
       df_final[columns_to_fill] = df_final[columns_to_fill].replace('', 'unassigned')
 
+    #based on total abundance of selected proteins (after filtering)
+    if(window.var_chc_renormalize.get() == 1):
+      normalize = True
+    else:
+      normalize = False
+
     #Add table to dict for aggregation windows
-    #MyUtility.workDict['taxonomic_table'] = ["domain", "phylum", "class", "order", "family", "genus", "species"]
-    MyUtility.workDict['taxonomic_table'] = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
+    MyUtility.workDict['taxonomic_table2'] = []
+    MyUtility.workDict['taxonomic_table2'].extend(["superkingdom", "phylum", "class", "order", "family", "genus", "species"])
+
+    df_final = window.agg_check_taxonomic.filterDataframe(df_final)
 
     #save edit df in tmp variable
-    window.df_tmp = df_final
+    window.df_tmp = reorder_dataframe(df_final, normalize)
 
 class ManageTaxonomicDynamic(Thread):
   def __init__(self, window):
@@ -1747,11 +2149,19 @@ class ManageTaxonomicDynamic(Thread):
     df_final = window.df.copy()
     df_final_annotation = window.df_annotation.copy()
 
+    if( hasattr(window, 'chosenColumns_listbox') ):
+        MyUtility.workDict["taxonomic_columns"] = window.chosenColumns_listbox.get(0, 'end')
+    else:
+        MyUtility.workDict["taxonomic_columns"] = []
+
     #Protein Acession
     if( hasattr(window, 'frame_proteinAccession') ):
       old_name = window.proteinAccession_listbox.get(0, tk.END)[0]
       # Rinominiamo la colonna
       df_final_annotation = df_final_annotation.rename(columns={old_name: 'proteinAccession'})
+      df_final_annotation["proteinAccession"] = df_final_annotation["proteinAccession"].str.split("|").apply(
+          lambda x: x[1] if len(x) == 3 else "|".join(x)
+      )
     #Peptide Sequence
     if( hasattr(window, 'frame_peptideSequence') ):
       old_name = window.peptideSequence_listbox.get(0, tk.END)[0]
@@ -1802,10 +2212,13 @@ class ManageTaxonomicDynamic(Thread):
           df_final = df_final.merge(df_final_annotation, left_on='Sequence', right_on='peptideSequence', how='left')
           df_final.drop(['peptideSequence'], inplace=True, axis=1, errors='ignore')
 
+
+
     #control to put zero in empty cells 
     if(MyUtility.workDict['fill0'] == 1):
       #get abundace colums
-      sub_set = list(df_final.filter(regex=r'F\d+'))
+      sub_set = [c for c in df_final.columns if c.startswith("Abundance ")]
+
       df_final[sub_set] = df_final[sub_set].fillna(0)
 
     #check if fill empty cells in annotation
@@ -1817,11 +2230,20 @@ class ManageTaxonomicDynamic(Thread):
       # Sostituisci le stringhe vuote ('') con "unassigned" nelle colonne di interesse
       df_final[columns_to_fill] = df_final[columns_to_fill].replace('', 'unassigned')
 
+    #based on total abundance of selected proteins (after filtering)
+    if(window.var_chc_renormalize.get() == 1):
+      normalize = True
+    else:
+      normalize = False
+
     #Add table to dict for aggregation windows
-    MyUtility.workDict['taxonomic_table'] = [col for col in df_final_annotation.columns if col not in ['Accession', 'Sequence', 'proteinAccession', 'peptideSequence']]
+    MyUtility.workDict['taxonomic_table2'] = []
+    MyUtility.workDict['taxonomic_table2'].extend([col for col in df_final_annotation.columns if col not in ['Accession', 'Sequence', 'proteinAccession', 'peptideSequence']])
+
+    df_final = window.agg_check_taxonomic.filterDataframe(df_final)
 
     #save edit df in tmp variable
-    window.df_tmp = df_final
+    window.df_tmp = reorder_dataframe(df_final, normalize)
 
 #class to manage file on Functional window
 class ManageFunctional(Thread):
@@ -1837,6 +2259,11 @@ class ManageFunctional(Thread):
     #create a copy for finale edits
     df_final = window.df.copy()
     df_final_annotation = window.df_annotation.copy()
+
+    if( hasattr(window, 'chosenColumns_listbox') ):
+        MyUtility.workDict["functional_columns"] = window.chosenColumns_listbox.get(0, 'end')
+    else:
+        MyUtility.workDict["functional_columns"] = []
 
     #eventual edit for dynamic
     if(MyUtility.workDict["functional_mode"] == 'dynamic'):
@@ -1858,6 +2285,7 @@ class ManageFunctional(Thread):
         old_name = window.kegg_pathway_listbox.get(0, tk.END)[0]
         # Rinominiamo la colonna
         df_final_annotation = df_final_annotation.rename(columns={old_name: 'KEGG_Pathway'})
+        df_final_annotation["KEGG_Pathway"] = df_final_annotation["KEGG_Pathway"].apply(lambda x: ",".join([item for item in x.split(",") if not item.lower().strip().startswith("ko")]))
       if( hasattr(window, 'frame_kegg_module') and (window.kegg_module_listbox.size() > 0) ):
         old_name = window.kegg_module_listbox.get(0, tk.END)[0]
         # Rinominiamo la colonna
@@ -1929,6 +2357,11 @@ class ManageFunctional(Thread):
       else: #peptide
         columns_to_match = 'Sequence'
 
+    #Change the protein ID, which consists of three values
+    df_final_annotation["query"] = df_final_annotation["query"].str.split("|").apply(
+        lambda x: x[1] if len(x) == 3 else "|".join(x)
+    )
+
     #join final_df and annotation_df
     df_final = (df_final.assign(query = df_final[columns_to_match].str.split('; '))
              .explode('query')
@@ -1963,17 +2396,15 @@ class ManageFunctional(Thread):
       for col in df_final_annotation.columns:
           if col in df_final.columns:
               df_final[col] = df_final[col].apply(add_unassigned_to_void)
-    ##
+
     #Replace column values if it repeats the same ";" character
     df_final = df_final.mask(df_final.applymap(lambda x: isinstance(x, str) and set(x) == {';'}), '')
-    #other method
-    #cols = ['col_1','col_2']
-    #df[cols] = df[cols].replace(r'^;{1,}$','', regex=True)
 
     #control to put zero in empty cells 
     if(MyUtility.workDict['fill0'] == 1):
       #get abundace colums
-      sub_set = list(df_final.filter(regex=r'F\d+'))
+      sub_set = [c for c in df_final.columns if c.startswith("Abundance ")]
+
       df_final[sub_set] = df_final[sub_set].fillna(0)
 
     #before control for kegg, remove 'ko:' from KEGG_KO
@@ -2102,6 +2533,7 @@ class ManageFunctional(Thread):
 
           for gruppo in lettere:
               lettere_gruppo = gruppo.split(',')
+
               #check if fill empty cells in annotation
               if(window.var_chc_unassigned.get() == 1):
                 descrizioni_gruppo = [COG_dict.get(lettera, 'unassigned') for lettera in lettere_gruppo]
@@ -2111,18 +2543,265 @@ class ManageFunctional(Thread):
 
           return ';'.join(descrizioni_lista)
 
+      # Funzione per togliere le virgole
+      def get_cog(lettere):
+          lettere = lettere.split(';')
+          gruppi = []
+
+          for gruppo in lettere:
+              lettere_gruppo = gruppo.split(',')
+              if(len(lettere_gruppo)>1):
+                  lettere_temp = []
+                  for lettera_gruppo in lettere_gruppo:
+                      lettera_gruppo = lettera_gruppo.strip()
+                      if(lettera_gruppo!=""):
+                          lettere_temp.append(lettera_gruppo)
+                  lettere_gruppo = lettere_temp
+              
+              gruppi.append(",".join(lettere_gruppo))
+
+          return ';'.join(gruppi)
+
       # Applicare la funzione al DataFrame
       df_final['COG name'] = df_final['COG_category'].apply(get_description)
+      df_final['COG_category'] = df_final['COG_category'].apply(get_cog)
 
     #Add table to dict for aggregation windows
+    MyUtility.workDict['functional_table2'] = []
+    MyUtility.workDict['functional_to_display2'] = []
     if(MyUtility.workDict['functional_mode'] == 'dynamic'):
-      MyUtility.workDict['functional_table'] = [col for col in df_final_annotation.columns if col not in ['query']]
+      MyUtility.workDict['functional_table2'].extend([col for col in df_final_annotation.columns if col not in ['query']])
+      MyUtility.workDict['functional_to_display2'].extend([col for col in df_final_annotation.columns if col not in ['query']])
     else:
-      MyUtility.workDict['functional_table']      = ["COG_category", "GOs", "EC", "KEGG_ko", "KEGG_Pathway", "KEGG_Module", "KEGG_Reaction", "CAZy"]
-      MyUtility.workDict['functional_to_display'] = ["COG_category", "GOs", "EC", "KEGG KO", "KEGG pathway", "KEGG module", "KEGG reaction", "CAZy"]
-
-    
-    
+      MyUtility.workDict['functional_table2'].extend(["COG_category", "GOs", "EC", "KEGG_ko", "KEGG_Pathway", "KEGG_Module", "KEGG_Reaction", "CAZy"])
+      MyUtility.workDict['functional_to_display2'].extend(["COG_category", "GOs", "EC", "KEGG KO", "KEGG pathway", "KEGG module", "KEGG reaction", "CAZy"])
 
     #save edit df in tmp variable
-    window.df_tmp = df_final
+    window.df_tmp = reorder_dataframe(df_final)
+
+
+
+def reorder_dataframe(df_final, normalize=False):
+  # columns to move
+  cols_to_move = []
+    
+  #add column in the order if exists
+  if("Accession" in df_final.columns):
+    cols_to_move.append("Accession")
+  
+  if("Description" in df_final.columns):
+    cols_to_move.append("Description")
+  
+  if("Protein FDR Confidence: Combined" in df_final.columns):
+    cols_to_move.append("Protein FDR Confidence: Combined")
+  
+  if("Protein ID" in df_final.columns):
+    cols_to_move.append("Protein ID")
+  
+  if("Protein" in df_final.columns):
+    cols_to_move.append("Protein")
+  
+  if("Master" in df_final.columns):
+    cols_to_move.append("Master")
+  
+  if("Sequence" in df_final.columns):
+    cols_to_move.append("Sequence")
+  
+  if("Master Protein Accessions" in df_final.columns):
+    cols_to_move.append("Master Protein Accessions")
+  
+  if("Marked as" in df_final.columns):
+    cols_to_move.append("Marked as")
+  
+  if("Master Protein Descriptions" in df_final.columns):
+    cols_to_move.append("Master Protein Descriptions")
+  
+  if("Mapped Proteins" in df_final.columns):
+    cols_to_move.append("Mapped Proteins")
+  
+  if("Database" in df_final.columns):
+    cols_to_move.append("Database")
+  
+  if("Organism" in df_final.columns):
+    cols_to_move.append("Organism")
+  
+  if("Lineage" in df_final.columns):
+    cols_to_move.append("Lineage")
+
+  if("Confidence" in df_final.columns):
+    cols_to_move.append("Confidence")
+  
+  if("Quan Info" in df_final.columns):
+    cols_to_move.append("Quan Info")
+  
+
+
+  if("lca" in df_final.columns):
+    cols_to_move.append("lca")
+
+  if("domain" in df_final.columns):
+    cols_to_move.append("domain")
+
+  if("superkingdom" in df_final.columns):
+    cols_to_move.append("superkingdom")
+
+  if("realm" in df_final.columns):
+    cols_to_move.append("realm")
+
+  if("kingdom" in df_final.columns):
+    cols_to_move.append("kingdom")
+
+  if("subkingdom" in df_final.columns):
+    cols_to_move.append("subkingdom")
+
+  if("superphylum" in df_final.columns):
+    cols_to_move.append("superphylum")
+
+  if("phylum" in df_final.columns):
+    cols_to_move.append("phylum")
+
+  if("subphylum" in df_final.columns):
+    cols_to_move.append("subphylum")
+
+  if("superclass" in df_final.columns):
+    cols_to_move.append("superclass")
+
+  if("class" in df_final.columns):
+    cols_to_move.append("class")
+
+  if("subclass" in df_final.columns):
+    cols_to_move.append("subclass")
+
+  if("superorder" in df_final.columns):
+    cols_to_move.append("superorder")
+
+  if("order" in df_final.columns):
+    cols_to_move.append("order")
+
+  if("suborder" in df_final.columns):
+    cols_to_move.append("suborder")
+
+  if("infraorder" in df_final.columns):
+    cols_to_move.append("infraorder")
+
+  if("superfamily" in df_final.columns):
+    cols_to_move.append("superfamily")
+
+  if("family" in df_final.columns):
+    cols_to_move.append("family")
+
+  if("subfamily" in df_final.columns):
+    cols_to_move.append("subfamily")
+
+  if("tribe" in df_final.columns):
+    cols_to_move.append("tribe")
+
+  if("subtribe" in df_final.columns):
+    cols_to_move.append("subtribe")
+
+  if("genus" in df_final.columns):
+    cols_to_move.append("genus")
+
+  if("subgenus" in df_final.columns):
+    cols_to_move.append("subgenus")
+
+  if("species group" in df_final.columns):
+    cols_to_move.append("species group")
+
+  if("species subgroup" in df_final.columns):
+    cols_to_move.append("species subgroup")
+
+  if("species" in df_final.columns):
+    cols_to_move.append("species")
+
+  if("subspecies" in df_final.columns):
+    cols_to_move.append("subspecies")
+
+  if("strain" in df_final.columns):
+    cols_to_move.append("strain")
+
+  if("varietas" in df_final.columns):
+    cols_to_move.append("varietas")
+
+  if("forma" in df_final.columns):
+    cols_to_move.append("forma")
+
+  if len(MyUtility.workDict.get("taxonomic_columns", [])) > 0:
+    for col in MyUtility.workDict.get("taxonomic_columns", []):
+        if col not in cols_to_move:
+            cols_to_move.append(col)
+  
+  if("COG_category" in df_final.columns):
+    cols_to_move.append("COG_category")
+
+  if("COG name" in df_final.columns):
+    cols_to_move.append("COG name")
+  
+  if("KEGG_ko" in df_final.columns):
+    cols_to_move.append("KEGG_ko")
+  
+  if("KO name" in df_final.columns):
+    cols_to_move.append("KO name")
+  
+  if("KEGG_Pathway" in df_final.columns):
+    cols_to_move.append("KEGG_Pathway")
+  
+  if("Pathway name" in df_final.columns):
+    cols_to_move.append("Pathway name")
+  
+  if("KEGG_Module" in df_final.columns):
+    cols_to_move.append("KEGG_Module")
+  
+  if("Module name" in df_final.columns):
+    cols_to_move.append("Module name")
+  
+  if("KEGG_Reaction" in df_final.columns):
+    cols_to_move.append("KEGG_Reaction")
+   
+  if("Reaction name" in df_final.columns):
+    cols_to_move.append("Reaction name")
+
+  if("GOs" in df_final.columns):
+    cols_to_move.append("GOs")
+  
+  if("EC" in df_final.columns):
+    cols_to_move.append("EC")
+  
+  if("CAZy" in df_final.columns):
+    cols_to_move.append("CAZy")
+
+  if len(MyUtility.workDict.get("functional_columns", [])) > 0:
+    for col in MyUtility.workDict.get("functional_columns", []):
+        if col not in cols_to_move:
+            cols_to_move.append(col)
+  
+  #add other columns
+  other_columns = [c for c in df_final if c not in cols_to_move and not c.startswith("Abundance ")]
+  
+  #add abundance columns
+  abundance_columns = [c for c in df_final if c.startswith("Abundance ")]
+
+  if(len(cols_to_move)>0):
+    # new list of columns
+    new_columns = (
+        []
+        + cols_to_move
+        + other_columns
+        + abundance_columns
+    )
+    
+    # dataframe reorder
+    df_final = df_final[new_columns]
+        
+  #If normalization has been requested, it is performed
+  if(normalize):
+    for col_name in abundance_columns:
+      if(df_final[col_name].sum()>0):
+        df_final[col_name] = ( df_final[col_name]/df_final[col_name].sum() ) * MyUtility.workDict["normalize"]
+      else:
+        df_final[col_name] = 0
+
+  return df_final
+  
+
+

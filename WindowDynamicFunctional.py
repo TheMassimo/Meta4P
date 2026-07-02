@@ -56,7 +56,7 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
     self.frame_left = tk.Frame(self, borderwidth=2, relief='flat')
     self.frame_left.grid(row=0, column=0, padx=2, pady=2, sticky="nsew")
     #Load button
-    self.btn_loadFile = tk.Button(self.frame_left, text='Upload annotation file', font=config.font_button, width=20, command=self.upload_file)
+    self.btn_loadFile = tk.Button(self.frame_left, text='Upload annotation file', bg='yellow', font=config.font_button, width=20, command=self.upload_file)
     self.btn_loadFile.grid(row=0, column=0, padx=5, pady=5)
     #label template
     self.lbl_loadedFile = tk.Label(self.frame_left, text='No file',width=30,font=config.font_up_base)
@@ -70,13 +70,14 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
     #Equate I and L
     if( (MyUtility.workDict["mode"] != 'Proteins') and (MyUtility.workDict['functional_match'] == 'peptide')):
       self.var_chc_IandL = IntVar(value=0)
-      self.chc_IandL = tk.Checkbutton(self.frame_left, text='I (isoleucine) has been replaced by L (leucine) in all peptide sequences listed in the annotation input',
+      self.chc_IandL = tk.Checkbutton(self.frame_left, text='Isoleucines replaced by leucines in peptide sequences',
                                            wraplength=250, width=34, anchor="w", variable=self.var_chc_IandL, onvalue=1, offvalue=0)
       self.chc_IandL.grid(row=3, column=0, padx=5, pady=10)
       self.chc_IandL.config(font = config.font_checkbox )
+
     #Download button
-    self.btn_download = tk.Button(self.frame_left, text='Download annotated table', font=config.font_button, width=20,command=self.download)
-    self.btn_download.grid(row=4, column=0, padx=5, pady=5)
+    self.btn_download = tk.Button(self.frame_left, text='Download annotated table', bg='lime', font=config.font_button, width=20,command=self.download)
+    self.btn_download.grid(row=5, column=0, padx=5, pady=5)
 
     ### centre area ###
     #title frame    
@@ -98,18 +99,19 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
         self.make_proteinAccession(p_row=1, p_column=1, p_name='Protein Accessions', p_sticky='n')
       else: #peptide
         self.make_peptideSequence(p_row=1, p_column=1, p_sticky='n')
-      
-    #other columns chose by user
-    self.make_chosenColumns(p_row=2, p_column=1, p_rowspan=3, p_sticky='n')
-
-    #column for COG
-    self.make_cog(p_row=5, p_column=1, p_sticky='n')
 
     #columns for KEGG
-    self.make_kegg_ko(p_row=1, p_column=2, p_sticky='n')
-    self.make_kegg_pathway(p_row=2, p_column=2, p_sticky='n')
-    self.make_kegg_module(p_row=3, p_column=2, p_sticky='n')
-    self.make_kegg_reaction(p_row=4, p_column=2, p_sticky='n')
+    self.make_kegg_ko(p_row=2, p_column=1, p_sticky='n')
+    self.make_kegg_pathway(p_row=3, p_column=1, p_sticky='n')
+    self.make_kegg_module(p_row=4, p_column=1, p_sticky='n')
+    self.make_kegg_reaction(p_row=5, p_column=1, p_sticky='n')
+
+    #column for COG
+    self.make_cog(p_row=1, p_column=2, p_sticky='n')
+      
+    #other columns chose by user
+    self.make_chosenColumns(p_row=2, p_column=2, p_rowspan=3, p_sticky='n')
+
     self.make_kegg_online(p_row=5, p_column=2, p_sticky='n')
 
     ### down area ###
@@ -413,7 +415,7 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
   def make_kegg_online(self, p_row=0, p_column=0, p_rowspan=1, p_columnspan=1, p_sticky='nsew'):
     #protein kegg online frame
     self.frame_keggOnline = tk.Frame(self.frame_centre, borderwidth=2, relief='flat')
-    self.frame_keggOnline.grid(row=p_row, column=p_column, rowspan=p_rowspan, columnspan=p_columnspan, padx=2, pady=2, sticky=p_sticky)
+    self.frame_keggOnline.grid(row=p_row, column=p_column, rowspan=p_rowspan, columnspan=p_columnspan, padx=2, pady=18, sticky=p_sticky)
 
     #Kegg description checkbox
     self.var_chc_kegg_description = IntVar(value=0)
@@ -543,7 +545,7 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
 
   def upload_file(self):
     #ask file name
-    filepath = filedialog.askopenfilename(parent=self, title="Open",filetypes=config.file_types)
+    filepath = filedialog.askopenfilename(parent=self, title="Open",filetypes=config.file_types_fragpipe)
 
     #check if a file has been chosen
     if filepath:
@@ -603,7 +605,7 @@ class DynamicFunctionalWindow(tk.Toplevel): #tk.Tk):
         return
 
       #ask directory to save file
-      file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types, defaultextension=".xlsx")
+      file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types_generic, defaultextension=".xlsx")
 
       #check if a file has been chosen
       if file_path:

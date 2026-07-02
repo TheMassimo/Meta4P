@@ -68,13 +68,13 @@ class RenameColumnsWindow(tk.Toplevel): #tk.Tk):
     self.lbl_descLoadGenerator = tk.Label(self, text='A Meta4P output file is required\nto retrieve sample column headers',width=30,font=config.font_description)  
     self.lbl_descLoadGenerator.grid(row=3, column=0, padx=0, pady=(20,0))
     #Load button
-    self.btn_loadGenerator = tk.Button(self, text='Upload file', width=27, command=self.upload_general_file)
+    self.btn_loadGenerator = tk.Button(self, text='Upload file', bg='yellow', width=27, command=self.upload_general_file)
     self.btn_loadGenerator.grid(row=4, column=0, padx=5, pady=5)
     #label generate
     self.lbl_generatorFile = tk.Label(self, text='No file',width=30,font=config.font_base)
     self.lbl_generatorFile.grid(row=5, column=0, padx=5, pady=5)
     #Done button
-    self.btn_downloadTemplate = tk.Button(self, text='Download conversion file', font=config.font_button, width=27, command=self.download_template)
+    self.btn_downloadTemplate = tk.Button(self, text='Download conversion file', bg='lime', font=config.font_button, width=27, command=self.download_template)
     self.btn_downloadTemplate.grid(row=6, column=0, padx=5, pady=5)
 
     #Only for space
@@ -95,7 +95,7 @@ class RenameColumnsWindow(tk.Toplevel): #tk.Tk):
     self.lbl_descLoadTemplate = tk.Label(self, text='Modified conversion file with\nnew sample column headers\nand/or sample order',width=30,font=config.font_description)  
     self.lbl_descLoadTemplate.grid(row=3, column=2, padx=0, pady=(20,0))
     #Load Template
-    self.btn_loadTemplate = tk.Button(self, text='Upload file', width=27, font=config.font_button, command=self.upload_template_file)
+    self.btn_loadTemplate = tk.Button(self, text='Upload file', bg='yellow', width=27, font=config.font_button, command=self.upload_template_file)
     self.btn_loadTemplate.grid(row=4, column=2, padx=5, pady=5)
     #label template
     self.lbl_templateFile = tk.Label(self, text='No file',width=30,font=config.font_base)
@@ -112,7 +112,7 @@ class RenameColumnsWindow(tk.Toplevel): #tk.Tk):
     self.lbl_descLoadEditable = tk.Label(self, text='Meta4P outputs with sample\ncolumns to rename/reorder',width=30,font=config.font_description)  
     self.lbl_descLoadEditable.grid(row=3, column=4, padx=0, pady=(20,0))
     #Button for Load File to edit
-    self.btn_loadEditable = tk.Button(self, text='Upload file(s)', font=config.font_button, width=27, command=self.upload_editable_file)
+    self.btn_loadEditable = tk.Button(self, text='Upload file(s)', bg='yellow', font=config.font_button, width=27, command=self.upload_editable_file)
     self.btn_loadEditable.grid(row=4, column=4, padx=5, pady=5)
     #label template
     self.lbl_editableFile = tk.Label(self, text='No file',width=30,font=config.font_base)
@@ -127,7 +127,7 @@ class RenameColumnsWindow(tk.Toplevel): #tk.Tk):
     self.lbl_loadEditable = tk.Label(self, text='Rename/reorder',width=25,font=config.font_title)  
     self.lbl_loadEditable.grid(row=1, column=6, padx=6, pady=6)
     #Final Done button
-    self.btn_rename = tk.Button(self, text='Rename/reorder sample columns', font=config.font_button, width=27, command=self.pre_download)
+    self.btn_rename = tk.Button(self, text='Rename/reorder sample columns', bg='lime', font=config.font_button, width=27, command=self.pre_download)
     self.btn_rename.grid(row=4, column=6, padx=5, pady=5)
 
     #decription lbl_warning
@@ -209,11 +209,11 @@ class RenameColumnsWindow(tk.Toplevel): #tk.Tk):
 
   def manage_the_upload_generator(self):
     #get list of columns
-    allColumns = list(self.df_gn.filter(regex=r'F\d+'))
+    allColumns = list(self.df_gn.filter(regex=r'^Abundance '))
     #make one row for every column
     self.df_gn = pd.DataFrame(allColumns)
     #extrat only F* word
-    self.df_gn = self.df_gn[0].str.extract(pat = '([F][\w]+)')
+    self.df_gn = self.df_gn[0].str.extract(r'(Abundance [\w]+)')
     #remove all dupliate
     self.df_gn = self.df_gn.drop_duplicates()
     #rename columns
@@ -258,7 +258,6 @@ class RenameColumnsWindow(tk.Toplevel): #tk.Tk):
       if(len(tmp_path)>25):
         tmp_path = tmp_path[:25] + "..."
       self.lbl_templateFile['text'] = tmp_path
-      #self.lbl_templateFile['text'] = os.path.basename(filepath)
 
       #show loading windows
       self.winLoad = wLd.LoadingWindow("Uploading file...")
@@ -281,7 +280,6 @@ class RenameColumnsWindow(tk.Toplevel): #tk.Tk):
       if(len(tmp_path)>25):
         tmp_path = tmp_path[:25] + "..."
       self.lbl_generatorFile['text'] = tmp_path
-      #self.lbl_generatorFile['text'] = os.path.basename(filepath)
 
       #show loading windows
       self.winLoad = wLd.LoadingWindow("Uploading file(s)...")
@@ -297,7 +295,7 @@ class RenameColumnsWindow(tk.Toplevel): #tk.Tk):
     #check if file is loadid
     if(self.isLoad_df_gn):
       #ask directory to save file
-      file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types, defaultextension=".xlsx")
+      file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types_generic, defaultextension=".xlsx")
 
       #check if a file has been chosen
       if file_path:

@@ -43,8 +43,9 @@ class InformationLevelWindow(tk.Toplevel): #tk.Tk):
         self.btn_peptide = tk.Button(self, text='Peptides', width=26, font=config.font_button, command=self.do_peptide)
         self.btn_peptide.grid(row=2, column=0, padx=5, pady=5)
         #PSMs button
-        self.btn_psms = tk.Button(self, text='PSMs', width=26, font=config.font_button, command=self.do_psms)
-        self.btn_psms.grid(row=3, column=0, padx=5, pady=5)
+        if(MyUtility.workDict["input_type"] != 'fragpipe'):
+            self.btn_psms = tk.Button(self, text='PSMs', width=26, font=config.font_button, command=self.do_psms)
+            self.btn_psms.grid(row=3, column=0, padx=5, pady=5)
         
         #empty label
         self.lbl_empty = tk.Label(self, text='',width=30, font=config.font_subtitle)  
@@ -52,9 +53,6 @@ class InformationLevelWindow(tk.Toplevel): #tk.Tk):
         #Previous Step
         self.btn_previous_step = tk.Button(self, text='← Previous step', font=config.font_button, width=20, command=self.previous_window)
         self.btn_previous_step.grid(row=5, column=0, padx=5, pady=5)
-        #Next Step
-        #self.btn_next_step = tk.Button(self, text='Next step →', font=self.config.font_button, width=20,  command=self.next_window)
-        #self.btn_next_step.grid(row=11, column=5, padx=5, pady=5)
 
         #put this window up
         self.lift()

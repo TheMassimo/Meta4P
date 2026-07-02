@@ -55,7 +55,7 @@ class StandardFunctionalWindow(tk.Toplevel): #tk.Tk):
     self.lbl_space_1.grid(row=0, column=0, padx=5, pady=5)
 
     #Load annotation button
-    self.btn_loadFile = tk.Button(self, text='Upload annotation file', font=config.font_button, width=22, command=self.upload_annotation_file)
+    self.btn_loadFile = tk.Button(self, text='Upload annotation file', bg='yellow', font=config.font_button, width=22, command=self.upload_annotation_file)
     self.btn_loadFile.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
 
     #label annotation loaded
@@ -68,7 +68,7 @@ class StandardFunctionalWindow(tk.Toplevel): #tk.Tk):
     self.lbl_annotationInfo.grid(row=3, column=0, columnspan=2, padx=0, pady=0)
 
     #Download button
-    self.btn_download = tk.Button(self, text='Download annotated table', font=config.font_button, width=22,command=self.download)
+    self.btn_download = tk.Button(self, text='Download annotated table', bg='lime', font=config.font_button, width=22,command=self.download)
     self.btn_download.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
 
     #Only for space
@@ -103,14 +103,6 @@ class StandardFunctionalWindow(tk.Toplevel): #tk.Tk):
                                          width=34, anchor="w", variable=self.var_chc_unassigned, onvalue=1, offvalue=0)
     self.chc_unassigned.grid(row=3, column=2, padx=5, pady=5)
     self.chc_unassigned.config(font = config.font_checkbox )
-
-    ##Equate I and L
-    #if( (MyUtility.workDict["mode"] != 'Proteins') and (MyUtility.workDict['functional_match'] == 'peptide')):
-    #  self.var_chc_IandL = IntVar(value=0)
-    #  self.chc_IandL = tk.Checkbutton(self, text='I (isoleucine) has been replaced by L (leucine) in all peptide sequences listed in the annotation input',
-    #                                       wraplength=250, width=34, anchor="w", variable=self.var_chc_IandL, onvalue=1, offvalue=0)
-    #  self.chc_IandL.grid(row=4, column=2, padx=(5,10), pady=(10,20))
-    #  self.chc_IandL.config(font = config.font_checkbox )
 
     #put this window up
     self.lift()
@@ -201,7 +193,7 @@ class StandardFunctionalWindow(tk.Toplevel): #tk.Tk):
 
   def upload_annotation_file(self):
     #ask file name
-    filepath = filedialog.askopenfilename(parent=self, title="Open",filetypes=config.file_types)
+    filepath = filedialog.askopenfilename(parent=self, title="Open",filetypes=config.file_types_fragpipe)
 
     #check if a file has been chosen
     if filepath:
@@ -240,7 +232,7 @@ class StandardFunctionalWindow(tk.Toplevel): #tk.Tk):
     #check if file is loadid
     if(self.isFileLoad):
       #ask directory to save file
-      file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types, defaultextension=".xlsx")
+      file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types_generic, defaultextension=".xlsx")
 
       #check if a file has been chosen
       if file_path:

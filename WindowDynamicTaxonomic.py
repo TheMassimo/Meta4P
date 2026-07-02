@@ -56,28 +56,37 @@ class DynamicTaxonomicWindow(tk.Toplevel): #tk.Tk):
     self.frame_left = tk.Frame(self, borderwidth=2, relief='flat')
     self.frame_left.grid(row=0, column=0, padx=2, pady=2, sticky="nsew")
     #Load button
-    self.btn_loadFile = tk.Button(self.frame_left, text='Upload annotation file', font=config.font_button, width=20, command=self.upload_file)
+    self.btn_loadFile = tk.Button(self.frame_left, text='Upload annotation file', bg='yellow', font=config.font_button, width=20, command=self.upload_file)
     self.btn_loadFile.grid(row=0, column=0, padx=5, pady=5)
     #label template
     self.lbl_loadedFile = tk.Label(self.frame_left, text='No file',width=30,font=config.font_up_base)
     self.lbl_loadedFile.grid(row=1, column=0, padx=5, pady=5)
+
+    #Equate I and L
+    if( (MyUtility.workDict["mode"] != 'Proteins') and (MyUtility.workDict['taxonomic_match'] == 'peptide')):
+      self.var_chc_IandL = IntVar(value=0)
+      self.chc_IandL = tk.Checkbutton(self.frame_left, text='Isoleucines replaced by leucines in peptide sequences',
+                                           wraplength=250, width=34, anchor="w", variable=self.var_chc_IandL, onvalue=1, offvalue=0)
+      self.chc_IandL.grid(row=2, column=0, padx=5, pady=10)
+      self.chc_IandL.config(font = config.font_checkbox )
+
     #Fill with unassigned
     self.var_chc_unassigned = IntVar(value=0)
     self.chc_unassigned = tk.Checkbutton(self.frame_left, text='Replace missing values with \'unassigned\'',
                                          width=34, anchor="w", variable=self.var_chc_unassigned, onvalue=1, offvalue=0)
-    self.chc_unassigned.grid(row=2, column=0, padx=5, pady=10)
+    self.chc_unassigned.grid(row=3, column=0, padx=5, pady=10)
     self.chc_unassigned.config(font = config.font_checkbox )
-    #Equate I and L
-    if( (MyUtility.workDict["mode"] != 'Proteins') and (MyUtility.workDict['taxonomic_match'] == 'peptide')):
-      self.var_chc_IandL = IntVar(value=0)
-      self.chc_IandL = tk.Checkbutton(self.frame_left, text='I (isoleucine) has been replaced by L (leucine) in all peptide sequences listed in the annotation input',
-                                           wraplength=250, width=34, anchor="w", variable=self.var_chc_IandL, onvalue=1, offvalue=0)
-      self.chc_IandL.grid(row=4, column=0, padx=5, pady=10)
-      self.chc_IandL.config(font = config.font_checkbox )
+
+    #Renormalize
+    self.var_chc_renormalize = IntVar(value=0)
+    self.chc_renormalize = tk.Checkbutton(self.frame_left, text='Apply TSS normalization based on total abundance of selected taxa (after filtering)',
+                                           wraplength=250, width=34, anchor="w", variable=self.var_chc_renormalize, onvalue=1, offvalue=0)
+    self.chc_renormalize.grid(row=4, column=0, padx=5, pady=10)
+    self.chc_renormalize.config(font = config.font_checkbox )
 
     #Download button
-    self.btn_download = tk.Button(self.frame_left, text='Download annotated table', font=config.font_button, width=20,command=self.download)
-    self.btn_download.grid(row=5, column=0, padx=5, pady=5)
+    self.btn_download = tk.Button(self.frame_left, text='Download annotated table', bg='lime', font=config.font_button, width=20,command=self.download)
+    self.btn_download.grid(row=6, column=0, padx=5, pady=5)
 
     ### centre area ###
     #title frame    
@@ -100,11 +109,31 @@ class DynamicTaxonomicWindow(tk.Toplevel): #tk.Tk):
         self.make_peptideSequence(p_row=1, p_column=1, p_sticky='n')
 
     self.make_chosenColumns(p_row=2, p_column=1, p_rowspan=1, p_sticky='n')
+    
+    ### right area ###
+    #title frame    
+    self.frame_right = tk.Frame(self, borderwidth=2, relief='flat')
+    self.frame_right.grid(row=0, column=2, padx=2, pady=2,sticky="nsew")
+
+    #Valid values (Abundance label)
+    self.lbl_check_taxonomic = tk.Label(self.frame_right,text='Taxonomic filter', width=20, font=config.font_subtitle)  
+    self.lbl_check_taxonomic.grid(row=0, column=1)
+
+    self.agg_check_taxonomic = MyUtility.AggregatorVirtualCheckboxList(
+                                                                          self.frame_right,
+                                                                          padx=1, 
+                                                                          pady=1,
+                                                                          width=200,
+                                                                          height=240,
+                                                                          select=True,
+                                                                          search=True
+                                                                        )
+    self.agg_check_taxonomic.grid(row=1, column=1, rowspan=5, padx=20, pady=5)
 
 
     ### down area ###
     self.frame_down = tk.Frame(self, borderwidth=2, relief='flat')
-    self.frame_down.grid(row=1, column=0, columnspan=2, padx=2, pady=(2,10), sticky="nsew")
+    self.frame_down.grid(row=1, column=0, columnspan=3, padx=2, pady=(2,10), sticky="nsew")
     self.frame_down.columnconfigure(0, weight=1)
     self.frame_down.columnconfigure(1, weight=1)
     self.frame_down.columnconfigure(2, weight=1)
@@ -264,6 +293,8 @@ class DynamicTaxonomicWindow(tk.Toplevel): #tk.Tk):
     for el in reversed(items_to_move):
       recipient_listbox.insert(END, el)
 
+    self.reload_agg_check_taxonomic()
+
   def restore_column(self, sender_listbox):
     #Move the elements to the various areas and remove them from the main one
     #remove the elements from the starting listbox
@@ -276,6 +307,28 @@ class DynamicTaxonomicWindow(tk.Toplevel): #tk.Tk):
     #add elements to recipient listbox
     for el in reversed(items_to_move):
       self.all_columns_listbox.insert(END, el)
+
+    self.reload_agg_check_taxonomic()
+
+  def reload_agg_check_taxonomic(self):
+    index_listbox = None
+    if( hasattr(self, 'proteinAccession_listbox') ):
+      index_listbox = self.proteinAccession_listbox
+    if( hasattr(self, 'peptideSequence_listbox') ):
+      index_listbox = self.peptideSequence_listbox
+    columns_listbox = self.chosenColumns_listbox
+
+    if(index_listbox is not None):
+      if (index_listbox.size()>0 and columns_listbox.size()>0):
+        indexes = []
+        columns = []
+        for item in index_listbox.get(0, "end"):
+          indexes.append(item)
+          columns.append(item)
+        for item in columns_listbox.get(0, "end"):
+          columns.append(item)
+        df_annotation = self.df_annotation[columns]
+        self.agg_check_taxonomic.setDataframe(df_annotation, indexes)
 
   def on_closing(self):
     if tk.messagebox.askokcancel("Quit", "Do you want to quit?"):
@@ -333,7 +386,7 @@ class DynamicTaxonomicWindow(tk.Toplevel): #tk.Tk):
 
   def upload_file(self):
     #ask file name
-    filepath = filedialog.askopenfilename(parent=self, title="Open",filetypes=config.file_types)
+    filepath = filedialog.askopenfilename(parent=self, title="Open",filetypes=config.file_types_fragpipe)
 
     #check if a file has been chosen
     if filepath:
@@ -394,7 +447,7 @@ class DynamicTaxonomicWindow(tk.Toplevel): #tk.Tk):
         return
 
       #ask directory to save file
-      file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types, defaultextension=".xlsx")
+      file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types_generic, defaultextension=".xlsx")
 
       #check if a file has been chosen
       if file_path:
@@ -460,7 +513,7 @@ class DynamicTaxonomicWindow(tk.Toplevel): #tk.Tk):
 
   def skip_window(self):
     #Edit the previous dict
-    MyUtility.workDict["taxonomic"] = False
+    MyUtility.workDict["taxonomic"] = False or MyUtility.workDict["taxonomic"] == True
 
     #hide this window
     self.withdraw()

@@ -94,7 +94,7 @@ class SummaryMetricsPreWindow(tk.Toplevel): #tk.Tk):
 
     def download(self):
         #ask directory to save file
-        file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types, initialfile=self.defaultDwName, defaultextension=".xlsx")
+        file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types_generic, initialfile=self.defaultDwName, defaultextension=".xlsx")
 
         #check if a file has been chosen
         if file_path:

@@ -35,25 +35,25 @@ class InputTypeWindow(tk.Toplevel): #tk.Tk):
         #title label
         self.lbl_title = tk.Label(self, text='Input file type',width=30, font=config.font_title)  
         self.lbl_title.grid(row=0, column=0, padx=6, pady=6)
+        #FragPipe export button
+        self.btn_fragpipe = tk.Button(self, text='FragPipe export', width=26, font=config.font_button, command=self.do_fragpipe)
+        self.btn_fragpipe.grid(row=1, column=0, padx=5, pady=5)
         #Proteome Discoverer export button
         self.btn_proteome = tk.Button(self, text='Proteome Discoverer export', width=26, font=config.font_button, command=self.do_proteome)
-        self.btn_proteome.grid(row=1, column=0, padx=5, pady=5)
+        self.btn_proteome.grid(row=2, column=0, padx=5, pady=5)
         #mzTab button
         self.btn_mzTab = tk.Button(self, text='mzTab', width=26, font=config.font_button, command=self.do_mzTab)
-        self.btn_mzTab.grid(row=2, column=0, padx=5, pady=5)
+        self.btn_mzTab.grid(row=3, column=0, padx=5, pady=5)
         #other button
         self.btn_other = tk.Button(self, text='Other/custom', width=26, font=config.font_button, command=self.do_other)
-        self.btn_other.grid(row=3, column=0, padx=5, pady=5)
+        self.btn_other.grid(row=4, column=0, padx=5, pady=5)
 
         #empty label
         self.lbl_empty = tk.Label(self, text='',width=30, font=config.font_subtitle)  
-        self.lbl_empty.grid(row=4, column=0, padx=6, pady=6)
+        self.lbl_empty.grid(row=5, column=0, padx=6, pady=6)
         #Previous Step
         self.btn_previous_step = tk.Button(self, text='← Previous step', font=config.font_button, width=20, command=self.previous_window)
-        self.btn_previous_step.grid(row=5, column=0, padx=5, pady=5)
-        #Next Step
-        #self.btn_next_step = tk.Button(self, text='Next step →', font=self.config.font_button, width=20,  command=self.next_window)
-        #self.btn_next_step.grid(row=11, column=5, padx=5, pady=5)
+        self.btn_previous_step.grid(row=6, column=0, padx=5, pady=5)
 
         #put this window up
         self.lift()
@@ -68,6 +68,11 @@ class InputTypeWindow(tk.Toplevel): #tk.Tk):
     def do_proteome(self):
         #change input type value
         MyUtility.workDict["input_type"] = 'proteome'
+        self.create_informationLevel()
+
+    def do_fragpipe(self):
+        #change input type value
+        MyUtility.workDict["input_type"] = 'fragpipe'
         self.create_informationLevel()
 
     def do_mzTab(self):

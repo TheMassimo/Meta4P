@@ -60,13 +60,13 @@ class DynamicOrganicCompoundsWindow(tk.Toplevel): #tk.Tk):
     self.frame_left = tk.Frame(self, borderwidth=2, relief='flat')
     self.frame_left.grid(row=0, column=0, padx=2, pady=2, sticky="nsew")
     #Load button
-    self.btn_loadFile = tk.Button(self.frame_left, text='Upload input file', font=config.font_button, width=20, command=self.upload_file)
+    self.btn_loadFile = tk.Button(self.frame_left, text='Upload input file', bg='yellow', font=config.font_button, width=20, command=self.upload_file)
     self.btn_loadFile.grid(row=0, column=0, padx=5, pady=5)
     #label template
     self.lbl_loadedFile = tk.Label(self.frame_left, text='No file',width=30,font=config.font_up_base)
     self.lbl_loadedFile.grid(row=1, column=0, padx=5, pady=5)
     #Download button
-    self.btn_download = tk.Button(self.frame_left, text='Download filtered table', font=config.font_button, width=20,command=self.download)
+    self.btn_download = tk.Button(self.frame_left, text='Download filtered table', bg='lime', font=config.font_button, width=20,command=self.download)
     self.btn_download.grid(row=2, column=0, padx=5, pady=5)
 
 
@@ -122,7 +122,7 @@ class DynamicOrganicCompoundsWindow(tk.Toplevel): #tk.Tk):
 
     self.make_fill_zero(p_row=3)
     if(MyUtility.workDict['mode'] != 'PSMs'):
-      self.make_re_normalized(p_row=5, p_text='Normalize abundances (after filtering)')
+      self.make_re_normalized(p_row=5, p_text='Apply TSS normalization (after filtering)')
 
     if(MyUtility.workDict['mode'] != 'Proteins'):
       self.make_separator(p_row=6, p_column=0, p_sticky='n')
@@ -375,6 +375,13 @@ class DynamicOrganicCompoundsWindow(tk.Toplevel): #tk.Tk):
     self.chc_re_normalized.grid(row=p_row, column=p_column, padx=5, pady=5)
     self.chc_re_normalized.config( font = config.font_checkbox )
 
+  def delete_all_zeros(self, p_row=0, p_column=0, p_rowspan=1, p_columnspan=1, p_sticky='nsew'):
+    #Fill with 0 in abundances
+    self.var_chc_delete_all_zeros = IntVar(value=0)
+    self.chc_delete_all_zeros = tk.Checkbutton(self.frame_right, text='Delete rows with all zeros', width=32, anchor="w", variable=self.var_chc_delete_all_zeros, onvalue=1, offvalue=0)
+    self.chc_delete_all_zeros.grid(row=p_row, column=p_column, padx=5, pady=5)
+    self.chc_delete_all_zeros.config( font = config.font_checkbox )
+
   def make_separator(self, p_row=0, p_column=0, p_rowspan=1, p_columnspan=1, p_sticky='nsew'):
     #Separator frame
     self.frame_separator = tk.Frame(self.frame_right, borderwidth=2, relief='flat')
@@ -522,7 +529,7 @@ class DynamicOrganicCompoundsWindow(tk.Toplevel): #tk.Tk):
 
   def upload_file(self):
     #ask file name
-    filepath = filedialog.askopenfilename(parent=self, title="Open",filetypes=config.file_types)
+    filepath = filedialog.askopenfilename(parent=self, title="Open",filetypes=config.file_types_generic)
 
     #check if a file has been chosen
     if filepath:
@@ -531,7 +538,6 @@ class DynamicOrganicCompoundsWindow(tk.Toplevel): #tk.Tk):
       if(len(tmp_path)>25):
         tmp_path = tmp_path[:25] + "..."
       self.lbl_loadedFile['text'] = tmp_path
-      #self.lbl_loadedFile['text'] = os.path.basename(filepath)
 
       #show loading windows
       self.winLoad = wLd.LoadingWindow("Uploading file...")
@@ -610,7 +616,7 @@ class DynamicOrganicCompoundsWindow(tk.Toplevel): #tk.Tk):
         return
 
       #ask directory to save file
-      file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types, defaultextension=".xlsx")
+      file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types_generic, defaultextension=".xlsx")
 
       #check if a file has been chosen
       if file_path:
@@ -654,6 +660,8 @@ class DynamicOrganicCompoundsWindow(tk.Toplevel): #tk.Tk):
       #Check if value are right
       if(not self.final_checks()):
         return
+
+      MyUtility.workDict["quantitative"] = ""
         
       #show loading windows
       self.winLoad = wLd.LoadingWindow("Managing file...")

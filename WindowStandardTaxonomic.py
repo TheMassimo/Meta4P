@@ -55,21 +55,21 @@ class StandardTaxonomicWindow(tk.Toplevel): #tk.Tk):
     self.lbl_space_1.grid(row=0, column=0, padx=5, pady=5)
 
     #Load annotation button
-    self.btn_loadFile = tk.Button(self, text='Upload annotation', font=config.font_button, width=22, command=self.upload_annotation_file)
-    self.btn_loadFile.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
+    self.btn_loadFile = tk.Button(self, text='Upload annotation', bg='yellow', font=config.font_button, width=22, command=self.upload_annotation_file)
+    self.btn_loadFile.grid(row=1, column=0, padx=5, pady=5)
 
     #label annotation loaded
     self.lbl_loadedFile = tk.Label(self, text='No file',width=30,font=config.font_up_base)
-    self.lbl_loadedFile.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+    self.lbl_loadedFile.grid(row=2, column=0, padx=5, pady=5)
 
     #label annotation info
-    self.lbl_annotationInfo = tk.Label(self, text='Meta4P automatically retrieves taxonomic annotations for 8 main levels provided by the Unipept output: lca, domain/superkingdom, phylum, class, order, family, genus, and species.\nTo retrieve information at other levels, please choose "Other/custom taxonomic annotation" instead of "Unipept output" in the previous step, then manually select the columns for your desired levels.', 
+    self.lbl_annotationInfo = tk.Label(self, text='Meta4P automatically retrieves taxonomic annotations for 9 main levels provided by the Unipept output: lca, domain, kingdom, phylum, class, order, family, genus, and species.\nTo retrieve information at other levels, please choose "Other/custom taxonomic annotation" instead of "Unipept output" in the previous step, then manually select the columns for your desired levels.', 
                                         wraplength=500, width=100, font=config.font_info)
-    self.lbl_annotationInfo.grid(row=3, column=0, columnspan=2, padx=0, pady=0)
+    self.lbl_annotationInfo.grid(row=3, column=0, padx=0, pady=0)
 
     #Download button
-    self.btn_download = tk.Button(self, text='Download annotated table', font=config.font_button, width=22,command=self.download)
-    self.btn_download.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
+    self.btn_download = tk.Button(self, text='Download annotated table', bg='lime', font=config.font_button, width=22,command=self.download)
+    self.btn_download.grid(row=4, column=0, padx=5, pady=5)
 
     #Only for space
     self.lbl_space_2 = tk.Label(self, text='',width=30,font=config.font_up_base)
@@ -78,9 +78,29 @@ class StandardTaxonomicWindow(tk.Toplevel): #tk.Tk):
     #Previous Step
     self.btn_previous_step = tk.Button(self, text='← Previous step', font=config.font_button, width=22,command=self.previous_window)
     self.btn_previous_step.grid(row=6, column=0, padx=20, pady=5)
+
     #Next Step
     self.btn_next_step = tk.Button(self, text='Next step →', font=config.font_button, width=22,command=self.next_window)
     self.btn_next_step.grid(row=6, column=2, padx=20, pady=5)
+
+    #Valid values (Abundance label)
+    self.lbl_check_taxonomic = tk.Label(self,text='Taxonomic filter', width=20, font=config.font_subtitle)  
+    self.lbl_check_taxonomic.grid(row=0, column=1)
+
+    #AggregatorVirtualCheckboxList taxonomic
+    self.agg_check_taxonomic = MyUtility.AggregatorVirtualCheckboxList(
+                                                                          self,
+                                                                          padx=1, 
+                                                                          pady=1,
+                                                                          width=200,
+                                                                          height=240,
+                                                                          select=True,
+                                                                          search=True,
+                                                                          with_lineage=True,
+                                                                          label_normal="Taxon",
+                                                                          label_lineage="Lineage"
+                                                                        )
+    self.agg_check_taxonomic.grid(row=1, column=1, rowspan=5, padx=20, pady=5)
 
     ### right area ###
     #Options
@@ -90,17 +110,24 @@ class StandardTaxonomicWindow(tk.Toplevel): #tk.Tk):
     #Equate I and L
     if( (MyUtility.workDict["mode"] != 'Proteins') and (MyUtility.workDict['taxonomic_match'] == 'peptide')):
       self.var_chc_IandL = IntVar(value=0)
-      self.chc_IandL = tk.Checkbutton(self, text='I (isoleucine) has been replaced by L (leucine) in all peptide sequences listed in the annotation input',
+      self.chc_IandL = tk.Checkbutton(self, text='Output from Unipept version 6.2.5 or earlier (isoleucines replaced by leucines in peptide sequences)',
                                            wraplength=400, width=60, anchor="w", variable=self.var_chc_IandL, onvalue=1, offvalue=0)
-      self.chc_IandL.grid(row=2, column=2, padx=5, pady=(10,20))
+      self.chc_IandL.grid(row=1, column=2, padx=5, pady=(10,20))
       self.chc_IandL.config(font = config.font_checkbox )
 
     #Fill with unassigned
     self.var_chc_unassigned = IntVar(value=0)
     self.chc_unassigned = tk.Checkbutton(self, text='Replace missing values with \'unassigned\'',
                                            wraplength=400, width=60, anchor="w", variable=self.var_chc_unassigned, onvalue=1, offvalue=0)
-    self.chc_unassigned.grid(row=3, column=2, columnspan=2, padx=5, pady=5)
+    self.chc_unassigned.grid(row=2, column=2, columnspan=2, padx=5, pady=5)
     self.chc_unassigned.config(font = config.font_checkbox )
+
+    #Renormalize
+    self.var_chc_renormalize = IntVar(value=0)
+    self.chc_renormalize = tk.Checkbutton(self, text='Apply TSS normalization based on total abundance of selected taxa (after filtering)',
+                                           wraplength=400, width=60, anchor="w", variable=self.var_chc_renormalize, onvalue=1, offvalue=0)
+    self.chc_renormalize.grid(row=3, column=2, columnspan=2, padx=5, pady=5)
+    self.chc_renormalize.config(font = config.font_checkbox )
 
     #put this window up
     self.lift()
@@ -149,8 +176,8 @@ class StandardTaxonomicWindow(tk.Toplevel): #tk.Tk):
     #self.df_annotation.drop(['EC'], inplace=True, axis=1, errors='ignore')
 
     #create a valid list of columns and add abundaces columns for domain and superkingdom export
-    valid_columns_domain = ["lca", "domain", "phylum", "class", "order", "family", "genus", "species"]
-    valid_columns_superkingdom = ["lca", "superkingdom", "phylum", "class", "order", "family", "genus", "species"]
+    valid_columns_domain = ["lca", "domain", "kingdom", "phylum", "class", "order", "family", "genus", "species"]
+    valid_columns_superkingdom = ["lca", "superkingdom", "kingdom", "phylum", "class", "order", "family", "genus", "species"]
 
     #insert in first position the first elment according to the type of the file for domain and superkingdom export
     if(MyUtility.workDict["mode"] == 'Proteins'):
@@ -183,11 +210,13 @@ class StandardTaxonomicWindow(tk.Toplevel): #tk.Tk):
     if(check_superkingdom):
       self.df_annotation = df_superkingdom #.rename(columns={"superkingdom": "domain"})
 
+    self.agg_check_taxonomic.setDataframe(self.df_annotation)
+
     return True
 
   def upload_annotation_file(self):
     #ask file name
-    filepath = filedialog.askopenfilename(parent=self, title="Open",filetypes=config.file_types)
+    filepath = filedialog.askopenfilename(parent=self, title="Open",filetypes=config.file_types_fragpipe)
 
     #check if a file has been chosen
     if filepath:
@@ -226,7 +255,7 @@ class StandardTaxonomicWindow(tk.Toplevel): #tk.Tk):
     #check if file is loadid
     if(self.isFileLoad):
       #ask directory to save file
-      file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types, defaultextension=".xlsx")
+      file_path = filedialog.asksaveasfilename(parent=self, filetypes=config.file_types_generic, defaultextension=".xlsx")
 
       #check if a file has been chosen
       if file_path:
@@ -288,7 +317,7 @@ class StandardTaxonomicWindow(tk.Toplevel): #tk.Tk):
 
   def skip_window(self):
     #Edit the previous dict
-    MyUtility.workDict["taxonomic"] = False
+    MyUtility.workDict["taxonomic"] = False or MyUtility.workDict["taxonomic"] == True
 
     #hide this window
     self.withdraw()

@@ -52,6 +52,12 @@ class LoadingWindow(tk.Toplevel):
     #Disable exit button and other
     #self.attributes("-disabled", True)
 
+  def change_label(self, text):
+    self.lbl_loadFile['text'] = text
+    self.update()
+    self.lift()
+
+
 
 if __name__ == "__main__":
   app = LoadingWindow()
