@@ -287,6 +287,7 @@ Se desideri contribuire:
 ## 👨‍⚖️ Autori
 
 - **Massimo** ([@TheMassimo](https://github.com/TheMassimo))
+- **Luca** ([@lvannucci-jpg](https://github.com/lvannucci-jpg))
 
 ---
 
